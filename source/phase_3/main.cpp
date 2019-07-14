@@ -11,6 +11,11 @@ using namespace rz::game::systems;
 using namespace rz::game::components;
 using namespace rz::taskscheduler;
 
+#include <unistd.h>
+#include <stdio.h>
+#include <limits.h>
+
+
 int main()
 {
     std::clog.setstate(std::ios_base::failbit);
@@ -39,6 +44,16 @@ int main()
     g[3].data = r;
 
     Space s{ g };
+
+    // Hook systems to same TaskScheduler
+    auto ts = std::make_shared<TaskScheduler>();
+    s._taskScheduler = ts;
+
+    g[0].data->setTaskScheduler(ts);
+    g[1].data->setTaskScheduler(ts);
+    g[2].data->setTaskScheduler(ts);
+    g[3].data->setTaskScheduler(ts);
+
     s.registerHandler(EventType::SPACE_NEW_ENTITY, [&s, &lua](const Event &e) {
         auto data = std::static_pointer_cast<SPACE_NEW_ENTITY>(e.data);
 

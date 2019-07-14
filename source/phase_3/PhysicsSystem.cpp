@@ -7,7 +7,7 @@ using namespace rz::game::systems;
 using namespace rz::eventstream;
 
 PhysicsSystem::PhysicsSystem(sol::state_view lua)
-	:_lua{ lua }
+	: _lua{lua}
 {
 	_interval = 0.01;
 
@@ -16,15 +16,14 @@ PhysicsSystem::PhysicsSystem(sol::state_view lua)
 	_componentTypes.insert(ComponentType::COLLIDER);
 
 	_lua.new_usertype<TransformComponent>("TransformComponent",
-		sol::constructors<TransformComponent()>(),
-		"translation", &TransformComponent::translation,
-		"scale", &TransformComponent::scale,
-		"rotation", sol::property(&TransformComponent::getRotation, &TransformComponent::setRotation)
-		);
+										  sol::constructors<TransformComponent()>(),
+										  "translation", &TransformComponent::translation,
+										  "scale", &TransformComponent::scale,
+										  "rotation", sol::property(&TransformComponent::getRotation, &TransformComponent::setRotation));
 
 	_lua.new_usertype<MotionComponent>("MotionComponent",
-                                           sol::constructors<MotionComponent()>(),
-                                           "velocity", &MotionComponent::velocity);
+									   sol::constructors<MotionComponent()>(),
+									   "velocity", &MotionComponent::velocity);
 
 	lua["STEERING_BEHAVIOUR"] = sol::new_table();
 	lua["STEERING_BEHAVIOUR"]["ARRIVE"] = SteeringBehaviour::ARRIVE;
@@ -41,13 +40,11 @@ PhysicsSystem::PhysicsSystem(sol::state_view lua)
 		auto data = std::static_pointer_cast<EVENTDATA_STEERING>(e.data);
 
 		_behaviours[e.id] = std::make_pair(data->behaviour, data->target);
-		}
-	);
+	});
 
 	extendHandler(EventType::SYSTEM_DELETE_COMPONENT, [&](const Event &e) {
 		_behaviours.erase(e.id);
-		}
-	);
+	});
 }
 
 PhysicsSystem::~PhysicsSystem()
@@ -56,60 +53,62 @@ PhysicsSystem::~PhysicsSystem()
 
 Task PhysicsSystem::update(EntityMap &entities, double delta)
 {
-	using ColliderVec = std::vector<std::tuple<UUID64, TransformComponent*, ColliderComponent*>>;
+	WorkFunc main = [this, entities, delta]() {
+		using ColliderVec = std::vector<std::tuple<UUID64, TransformComponent *, ColliderComponent *>>;
 
-	// Extract relavent components
-	std::map<UUID64, std::pair<TransformComponent*, MotionComponent*>, UUID64Cmp> bodies;
-	ColliderVec colliders;
-	for (auto &[id, entity] : entities)
-	{
-		if (entity.has(ComponentType::MOTION, ComponentType::TRANSFORM))
+		// Extract relavent components
+		std::map<UUID64, std::pair<TransformComponent *, MotionComponent *>, UUID64Cmp> bodies;
+		ColliderVec colliders;
+		for (auto &[id, entity] : entities)
 		{
-			auto t = getObject<TransformComponent>(entity[ComponentType::TRANSFORM]);
-			auto m = getObject<MotionComponent>(entity[ComponentType::MOTION]);
-
-			bodies[id] = std::make_pair(t, m);
-		}
-
-		if (entity.has(ComponentType::COLLIDER, ComponentType::TRANSFORM))
-		{
-			auto t = getObject<TransformComponent>(entity[ComponentType::TRANSFORM]);
-			auto c = getObject<ColliderComponent>(entity[ComponentType::COLLIDER]);
-
-			colliders.push_back(std::make_tuple(id, t, c));
-		}
-	}
-
-	// Update positions
-	for (auto &[id, comps] : bodies)
-	{
-		auto[t, m] = comps;
-
-		auto it = _behaviours.find(id);
-		if (it != _behaviours.end())
-		{
-			auto behaviour = it->second.first;
-			TransformComponent* target;
-
-			if (entities.find(it->second.second) != entities.end() && entities.find(it->second.second)->second.has(ComponentType::TRANSFORM))
+			if (entity.has(ComponentType::MOTION, ComponentType::TRANSFORM))
 			{
-				target = getObject<TransformComponent>((entities[it->second.second])[ComponentType::TRANSFORM]);
-			}
-			else
-			{
-				_behaviours[id] = std::make_pair(SteeringBehaviour::STOP, id);
+				auto t = getObject<TransformComponent>(entity[ComponentType::TRANSFORM]);
+				auto m = getObject<MotionComponent>(entity[ComponentType::MOTION]);
 
-				behaviour = SteeringBehaviour::STOP;
-				target = t;
+				bodies[id] = std::make_pair(t, m);
 			}
 
-			glm::vec2 steering{};
-
-			switch (behaviour)
+			if (entity.has(ComponentType::COLLIDER, ComponentType::TRANSFORM))
 			{
+				auto t = getObject<TransformComponent>(entity[ComponentType::TRANSFORM]);
+				auto c = getObject<ColliderComponent>(entity[ComponentType::COLLIDER]);
+
+				colliders.push_back(std::make_tuple(id, t, c));
+			}
+		}
+
+		// Update positions
+		for (auto &[id, comps] : bodies)
+		{
+			auto [t, m] = comps;
+
+			auto it = _behaviours.find(id);
+			if (it != _behaviours.end())
+			{
+				auto behaviour = it->second.first;
+				TransformComponent *target;
+
+				if (entities.find(it->second.second) != entities.end() && entities.find(it->second.second)->second.has(ComponentType::TRANSFORM))
+				{
+					target = getObject<TransformComponent>((entities.at(it->second.second))[ComponentType::TRANSFORM]);
+				}
+				else
+				{
+					_behaviours[id] = std::make_pair(SteeringBehaviour::STOP, id);
+
+					behaviour = SteeringBehaviour::STOP;
+					target = t;
+				}
+
+				glm::vec2 steering{};
+
+				switch (behaviour)
+				{
 				case SteeringBehaviour::ARRIVE:
 				{
-					if (target->translation == t->translation) break;
+					if (target->translation == t->translation)
+						break;
 
 					glm::vec2 desired = glm::normalize(target->translation - t->translation) * m->maxVelocity;
 
@@ -150,18 +149,17 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 				}
 				case SteeringBehaviour::WANDER:
 				{
-					glm::vec2 center = glm::normalize(m->velocity)*16.f;
+					glm::vec2 center = glm::normalize(m->velocity) * 16.f;
 
-					if (m->velocity == glm::vec2{ 0.f,0.f })
+					if (m->velocity == glm::vec2{0.f, 0.f})
 						center = m->velocity;
 
 					glm::vec2 displacement = glm::vec2{
-						8.f*std::cos(m->wanderAngle),
-						8.f*std::sin(m->wanderAngle)
-					};
+						8.f * std::cos(m->wanderAngle),
+						8.f * std::sin(m->wanderAngle)};
 
 					std::random_device r;
-					std::uniform_real_distribution<float> dist{ 0.f,1.f };
+					std::uniform_real_distribution<float> dist{0.f, 1.f};
 
 					float theta = 3.14159f * delta * 16.f;
 					m->wanderAngle += dist(r) * theta - theta * 0.5;
@@ -179,65 +177,66 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 
 					break;
 				}
+				}
+
+				m->velocity += steering * static_cast<float>(delta);
+
+				if (glm::length(m->velocity) > m->maxVelocity)
+					m->velocity = glm::normalize(m->velocity) * m->maxVelocity;
+
+				t->translation += m->velocity * static_cast<float>(delta);
+
+				float theta = std::acos(glm::dot(m->velocity, glm::vec2{1, 0}) / glm::length(m->velocity) * glm::length(glm::vec2{1, 0}));
+
+				if (m->velocity.y > 0)
+					t->setRotation(theta);
+				else
+					t->setRotation(2.f * 3.14159f - theta);
 			}
-
-			m->velocity += steering * static_cast<float>(delta);
-
-			if (glm::length(m->velocity) > m->maxVelocity)
-				m->velocity = glm::normalize(m->velocity) * m->maxVelocity;
-
-			t->translation += m->velocity * static_cast<float>(delta);
-
-			float theta = std::acos(glm::dot(m->velocity, glm::vec2{ 1,0 }) / glm::length(m->velocity)*glm::length(glm::vec2{ 1,0 }));
-
-			if (m->velocity.y > 0)
-				t->setRotation(theta);
 			else
-				t->setRotation(2.f * 3.14159f - theta);
-		}
-		else
-		{
-			t->translation += m->velocity * static_cast<float>(delta);
-		}
-	}
-
-	std::vector<Event> events;
-
-	// Calculate collisions
-	for (auto &[id1, t1, c1] : colliders)
-	{
-		for (auto &[id2, t2, c2] : colliders)
-		{
-			float length = glm::length(t2->translation - t1->translation);
-			if (length < c1->radius)
 			{
-				events.emplace_back(
-					id1,
-					EVENTTYPE_COLLISION,
-					std::make_shared<EVENTDATA_COLLISION>(id2, length, c2->group)
-				);
+				t->translation += m->velocity * static_cast<float>(delta);
 			}
 		}
-	}
 
-	// Send model matrixes to RenderSystem
-	for (auto &[id, entity] : entities)
-	{
-		if (!entity.has(ComponentType::TRANSFORM)) continue;
+		std::vector<Event> events;
 
-		auto transform = getObject<TransformComponent>(entity[ComponentType::TRANSFORM]);
+		// Calculate collisions
+		for (auto &[id1, t1, c1] : colliders)
+		{
+			for (auto &[id2, t2, c2] : colliders)
+			{
+				float length = glm::length(t2->translation - t1->translation);
+				if (length < c1->radius)
+				{
+					events.emplace_back(
+						id1,
+						EVENTTYPE_COLLISION,
+						std::make_shared<EVENTDATA_COLLISION>(id2, length, c2->group));
+				}
+			}
+		}
 
-		events.emplace_back(
-			id,
-			EVENTTYPE_MODEL,
-			std::make_shared<EVENTDATA_MODEL>(transform->getModel())
-		);
-	}
+		// Send model matrixes to RenderSystem
+		for (auto &[id, entity] : entities)
+		{
+			if (!entity.has(ComponentType::TRANSFORM))
+				continue;
 
-	pushEvents(events, StreamType::OUTGOING);
+			auto transform = getObject<TransformComponent>(entity[ComponentType::TRANSFORM]);
 
+			events.emplace_back(
+				id,
+				EVENTTYPE_MODEL,
+				std::make_shared<EVENTDATA_MODEL>(transform->getModel()));
+		}
 
-	return Task{};
+		pushEvents(events, StreamType::OUTGOING);
+	};
+
+	_parentTask = _taskScheduler->push(main, _parentTask);
+
+	return{};
 }
 
 ComponentHandle PhysicsSystem::createComponent(ComponentType type, std::shared_ptr<void> tuplePtr)
@@ -246,47 +245,47 @@ ComponentHandle PhysicsSystem::createComponent(ComponentType type, std::shared_p
 
 	switch (type)
 	{
-		case ComponentType::TRANSFORM:
-		{
-			TransformArgs args = *(std::static_pointer_cast<TransformArgs>(tuplePtr));
+	case ComponentType::TRANSFORM:
+	{
+		TransformArgs args = *(std::static_pointer_cast<TransformArgs>(tuplePtr));
 
-			h = emplaceObject<TransformComponent>(std::get<1>(args), std::get<2>(args), std::get<3>(args));
+		h = emplaceObject<TransformComponent>(std::get<1>(args), std::get<2>(args), std::get<3>(args));
 
-			sol::table obj = std::get<0>(args);
-			obj["transform"] = getObject<TransformComponent>(h);
+		sol::table obj = std::get<0>(args);
+		obj["transform"] = getObject<TransformComponent>(h);
 
-			break;
-		}
-		case ComponentType::MOTION:
-		{
-			MotionArgs	args = *(std::static_pointer_cast<MotionArgs>(tuplePtr));
+		break;
+	}
+	case ComponentType::MOTION:
+	{
+		MotionArgs args = *(std::static_pointer_cast<MotionArgs>(tuplePtr));
 
-			h = emplaceObject<MotionComponent>(std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args), std::get<5>(args));
+		h = emplaceObject<MotionComponent>(std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args), std::get<5>(args));
 
-			sol::table obj = std::get<0>(args);
-			obj["motion"] = getObject<MotionComponent>(h);
+		sol::table obj = std::get<0>(args);
+		obj["motion"] = getObject<MotionComponent>(h);
 
-			break;
-		}
-		case ComponentType::COLLIDER:
-		{
-			ColliderArgs args = *(std::static_pointer_cast<ColliderArgs>(tuplePtr));
+		break;
+	}
+	case ComponentType::COLLIDER:
+	{
+		ColliderArgs args = *(std::static_pointer_cast<ColliderArgs>(tuplePtr));
 
-			h = emplaceObject<ColliderComponent>(std::get<1>(args), std::get<2>(args));
+		h = emplaceObject<ColliderComponent>(std::get<1>(args), std::get<2>(args));
 
-			sol::table obj = std::get<0>(args);
-			obj["collider"] = getObject<ColliderComponent>(h);
+		sol::table obj = std::get<0>(args);
+		obj["collider"] = getObject<ColliderComponent>(h);
 
-			break;
-		}
-		default:
-		{
-			h = Handle{};
-			break;
-		}
+		break;
+	}
+	default:
+	{
+		h = Handle{};
+		break;
+	}
 	}
 
-	return ComponentHandle{ type, h };
+	return ComponentHandle{type, h};
 }
 
 bool PhysicsSystem::removeComponent(ComponentHandle ch)
@@ -295,18 +294,18 @@ bool PhysicsSystem::removeComponent(ComponentHandle ch)
 
 	switch (ch.first)
 	{
-		case ComponentType::TRANSFORM:
-			removeObject<TransformComponent>(ch.second);
-			break;
-		case ComponentType::MOTION:
-			removeObject<MotionComponent>(ch.second);
-			break;
-		case ComponentType::COLLIDER:
-			removeObject<ColliderComponent>(ch.second);
-			break;
-		default:
-			return false;
-			break;
+	case ComponentType::TRANSFORM:
+		removeObject<TransformComponent>(ch.second);
+		break;
+	case ComponentType::MOTION:
+		removeObject<MotionComponent>(ch.second);
+		break;
+	case ComponentType::COLLIDER:
+		removeObject<ColliderComponent>(ch.second);
+		break;
+	default:
+		return false;
+		break;
 	}
 
 	return true;

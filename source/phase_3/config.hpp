@@ -19,8 +19,6 @@ const int GROUP_BLUE = 2;
 const int GROUP_BULLETS = 3;
 const int GROUP_DEPOSITS = 4;
 
-extern rz::taskscheduler::TaskScheduler g_ts;
-
 enum class SteeringBehaviour
 {
     SEEK,

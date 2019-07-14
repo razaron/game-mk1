@@ -174,8 +174,9 @@ Task InputSystem::update(EntityMap &, double delta)
 		}
 	};
 
-	main();
-	return Task{};
+	_parentTask = _taskScheduler->push(main, _parentTask);
+
+	return{};
 }
 
 ComponentHandle InputSystem::createComponent(ComponentType type, std::shared_ptr<void>)

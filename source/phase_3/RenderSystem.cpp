@@ -7,7 +7,7 @@ using namespace rz::game::systems;
 using namespace rz::eventstream;
 
 RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
-    : _lua{ lua }, _window{ window }
+    : _lua{lua}, _window{window}
 {
     _interval = 0.01;
 
@@ -33,7 +33,7 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
         text.setString(str);
         text.setPosition(pos.x, pos.y);
         text.setCharacterSize(size);
-        text.setColor(sf::Color{ col.r, col.g, col.b });
+        text.setColor(sf::Color{col.r, col.g, col.b});
 
         window->draw(text);
     };
@@ -69,20 +69,26 @@ RenderSystem::~RenderSystem()
 
 Task RenderSystem::update(EntityMap &entities, double)
 {
-    _data.clear();
+    WorkFunc main = [this, entities]() {
+        _data.clear();
 
-    for (auto & [ id, entity ] : entities)
-    {
-        if (!entity.has(ComponentType::SHAPE)) continue;
-        if (_models.find(id) == _models.end()) continue;
+        for (auto &[id, entity] : entities)
+        {
+            if (!entity.has(ComponentType::SHAPE))
+                continue;
+            if (_models.find(id) == _models.end())
+                continue;
 
-        auto model = _models[id];
-        auto shape = *getObject<ShapeComponent>(entity[ComponentType::SHAPE]);
+            auto model = _models[id];
+            auto shape = *getObject<ShapeComponent>(entity[ComponentType::SHAPE]);
 
-        _data.push_back(std::make_pair(model, shape));
-    }
+            _data.push_back(std::make_pair(model, shape));
+        }
+    };
 
-    return Task{};
+	_parentTask = _taskScheduler->push(main, _parentTask);
+
+	return{};
 }
 
 ComponentHandle RenderSystem::createComponent(ComponentType type, std::shared_ptr<void> tuplePtr)
@@ -91,25 +97,25 @@ ComponentHandle RenderSystem::createComponent(ComponentType type, std::shared_pt
 
     switch (type)
     {
-        case ComponentType::SHAPE:
-        {
-            ShapeArgs args = *(std::static_pointer_cast<ShapeArgs>(tuplePtr));
+    case ComponentType::SHAPE:
+    {
+        ShapeArgs args = *(std::static_pointer_cast<ShapeArgs>(tuplePtr));
 
-            h = emplaceObject<ShapeComponent>(std::get<1>(args), std::get<2>(args));
+        h = emplaceObject<ShapeComponent>(std::get<1>(args), std::get<2>(args));
 
-            sol::table obj = std::get<0>(args);
-            obj["shape"] = getObject<ShapeComponent>(h);
+        sol::table obj = std::get<0>(args);
+        obj["shape"] = getObject<ShapeComponent>(h);
 
-            break;
-        }
-        default:
-        {
-            h = Handle{};
-            break;
-        }
+        break;
+    }
+    default:
+    {
+        h = Handle{};
+        break;
+    }
     }
 
-    return ComponentHandle{ type, h };
+    return ComponentHandle{type, h};
 }
 
 bool RenderSystem::removeComponent(ComponentHandle ch)
@@ -118,12 +124,12 @@ bool RenderSystem::removeComponent(ComponentHandle ch)
 
     switch (ch.first)
     {
-        case ComponentType::SHAPE:
-            removeObject<ShapeComponent>(ch.second);
-            break;
-        default:
-            return false;
-            break;
+    case ComponentType::SHAPE:
+        removeObject<ShapeComponent>(ch.second);
+        break;
+    default:
+        return false;
+        break;
     }
 
     return true;
@@ -135,7 +141,7 @@ void RenderSystem::render()
 
     std::vector<sf::Vertex> va;
 
-    for (auto & [ model, shape ] : _data)
+    for (auto &[model, shape] : _data)
     {
         float theta = .0f;
         float delta = 2 * 3.14159 / shape.sides;
@@ -144,17 +150,17 @@ void RenderSystem::render()
             float x = std::cos(theta);
             float y = std::sin(theta);
 
-            glm::vec4 v1{ std::cos(theta), std::sin(theta), 0.f, 1.f };
-            glm::vec4 v2{ std::cos(theta + delta), std::sin(theta + delta), 0.f, 1.f };
-            glm::vec4 v3{ 0.f, 0.f, 0.f, 1.f };
+            glm::vec4 v1{std::cos(theta), std::sin(theta), 0.f, 1.f};
+            glm::vec4 v2{std::cos(theta + delta), std::sin(theta + delta), 0.f, 1.f};
+            glm::vec4 v3{0.f, 0.f, 0.f, 1.f};
 
             v1 = model * v1;
             v2 = model * v2;
             v3 = model * v3;
 
-            va.emplace_back(sf::Vertex(sf::Vector2f{ v1.x, v1.y }, sf::Color(shape.colour.r, shape.colour.g, shape.colour.b)));
-            va.emplace_back(sf::Vertex(sf::Vector2f{ v2.x, v2.y }, sf::Color(shape.colour.r, shape.colour.g, shape.colour.b)));
-            va.emplace_back(sf::Vertex(sf::Vector2f{ v3.x, v3.y }, sf::Color(shape.colour.r, shape.colour.g, shape.colour.b)));
+            va.emplace_back(sf::Vertex(sf::Vector2f{v1.x, v1.y}, sf::Color(shape.colour.r, shape.colour.g, shape.colour.b)));
+            va.emplace_back(sf::Vertex(sf::Vector2f{v2.x, v2.y}, sf::Color(shape.colour.r, shape.colour.g, shape.colour.b)));
+            va.emplace_back(sf::Vertex(sf::Vector2f{v3.x, v3.y}, sf::Color(shape.colour.r, shape.colour.g, shape.colour.b)));
 
             theta += delta;
         }
