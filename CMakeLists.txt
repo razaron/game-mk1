@@ -42,5 +42,6 @@ ELSEIF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 15 2017 Win64")
     ENDIF()
 ENDIF()
 
-add_subdirectory(source/phase_1)
-add_subdirectory(source/phase_2)
+#add_subdirectory(source/phase_1)
+#add_subdirectory(source/phase_2)
+add_subdirectory(source/phase_3)
