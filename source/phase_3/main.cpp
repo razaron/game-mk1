@@ -11,11 +11,6 @@ using namespace rz::game::systems;
 using namespace rz::game::components;
 using namespace rz::taskscheduler;
 
-#include <unistd.h>
-#include <stdio.h>
-#include <limits.h>
-
-
 int main()
 {
     std::clog.setstate(std::ios_base::failbit);
