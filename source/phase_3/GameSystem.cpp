@@ -67,7 +67,7 @@ Task GameSystem::update(EntityMap &, double delta)
 		static double elapsed{};
 		elapsed += delta;
 		if (elapsed < _interval)
-			return Task{};
+			return;
 		else
 			elapsed -= _interval;
 
