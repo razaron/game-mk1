@@ -20,7 +20,7 @@ ENDFOREACH()
 add_custom_command(TARGET game-phase-1 POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${FROM_DIR}/res ${TO_DIR}/res)
 
 # COPY DLLS
-IF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 15 2017 Win64")
+IF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 15 2017 Win64" OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 16 2019")
     set(FROM_DIR ${PROJECT_SOURCE_DIR}/3rd_party/libs/Win64/${CONFIGURATION})
     set(TO_DIR $<TARGET_FILE_DIR:game-phase-1>)
     file(GLOB DLL_FILES "${FROM_DIR}/*.dll")
