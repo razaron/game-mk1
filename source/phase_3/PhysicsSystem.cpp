@@ -53,13 +53,16 @@ PhysicsSystem::~PhysicsSystem()
 
 Task PhysicsSystem::update(EntityMap &entities, double delta)
 {
-	WorkFunc main = [this, entities, delta]() {
+	if(_entities != entities) 
+        _entities = entities;
+
+    WorkFunc main = [this, delta]() {
 		using ColliderVec = std::vector<std::tuple<UUID64, TransformComponent *, ColliderComponent *>>;
 
 		// Extract relavent components
 		std::map<UUID64, std::pair<TransformComponent *, MotionComponent *>, UUID64Cmp> bodies;
 		ColliderVec colliders;
-		for (auto &[id, entity] : entities)
+		for (auto &[id, entity] : _entities)
 		{
 			if (entity.has(ComponentType::MOTION, ComponentType::TRANSFORM))
 			{
@@ -89,9 +92,9 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 				auto behaviour = it->second.first;
 				TransformComponent *target;
 
-				if (entities.find(it->second.second) != entities.end() && entities.find(it->second.second)->second.has(ComponentType::TRANSFORM))
+				if (_entities.find(it->second.second) != _entities.end() && _entities.find(it->second.second)->second.has(ComponentType::TRANSFORM))
 				{
-					target = getObject<TransformComponent>((entities.at(it->second.second))[ComponentType::TRANSFORM]);
+					target = getObject<TransformComponent>((_entities.at(it->second.second))[ComponentType::TRANSFORM]);
 				}
 				else
 				{
@@ -218,7 +221,7 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 		}
 
 		// Send model matrixes to RenderSystem
-		for (auto &[id, entity] : entities)
+		for (auto &[id, entity] : _entities)
 		{
 			if (!entity.has(ComponentType::TRANSFORM))
 				continue;

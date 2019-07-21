@@ -69,10 +69,13 @@ RenderSystem::~RenderSystem()
 
 Task RenderSystem::update(EntityMap &entities, double)
 {
-    WorkFunc main = [this, entities]() {
+    if(_entities != entities) 
+        _entities = entities;
+
+    WorkFunc main = [this]() {
         _data.clear();
 
-        for (auto &[id, entity] : entities)
+        for (auto &[id, entity] : _entities)
         {
             if (!entity.has(ComponentType::SHAPE))
                 continue;
