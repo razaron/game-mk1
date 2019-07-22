@@ -1,5 +1,5 @@
-#ifndef RZ_GAME2_RENDERSYSTEM_HPP
-#define RZ_GAME2_RENDERSYSTEM_HPP
+#ifndef RZ_GAME3_RENDERSYSTEM_HPP
+#define RZ_GAME3_RENDERSYSTEM_HPP
 
 #include "ShapeComponent.hpp"
 #include "System.hpp"
@@ -48,4 +48,4 @@ namespace rz::game::systems
     };
 }
 
-#endif //RZ_GAME2_RENDERSYSTEM_HPP
+#endif //RZ_GAME3_RENDERSYSTEM_HPP

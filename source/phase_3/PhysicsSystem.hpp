@@ -1,5 +1,5 @@
-#ifndef RZ_GAME2_PHYSICSSYSTEM_HPP
-#define RZ_GAME2_PHYSICSSYSTEM_HPP
+#ifndef RZ_GAME3_PHYSICSSYSTEM_HPP
+#define RZ_GAME3_PHYSICSSYSTEM_HPP
 
 #include "ColliderComponent.hpp"
 #include "MotionComponent.hpp"
@@ -35,4 +35,4 @@ namespace rz::game::systems
     };
 }
 
-#endif //RZ_GAME2_PHYSICSSYSTEM_HPP
+#endif //RZ_GAME3_PHYSICSSYSTEM_HPP

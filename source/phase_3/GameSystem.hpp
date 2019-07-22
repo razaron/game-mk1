@@ -1,5 +1,5 @@
-#ifndef RZ_GAME2_GAMESYSTEM_HPP
-#define RZ_GAME2_GAMESYSTEM_HPP
+#ifndef RZ_GAME3_GAMESYSTEM_HPP
+#define RZ_GAME3_GAMESYSTEM_HPP
 
 #include "LuaHooks.hpp"
 #include "System.hpp"
@@ -23,4 +23,4 @@ namespace rz::game::systems
     };
 }
 
-#endif //RZ_GAME2_GAMESYSTEM_HPP
+#endif //RZ_GAME3_GAMESYSTEM_HPP

@@ -1,5 +1,5 @@
-#ifndef RZ_GAME2_LUAHOOKS_HPP
-#define RZ_GAME2_LUAHOOKS_HPP
+#ifndef RZ_GAME3_LUAHOOKS_HPP
+#define RZ_GAME3_LUAHOOKS_HPP
 
 #include "Entity.hpp"
 #include "EventData.hpp"
@@ -224,4 +224,4 @@ namespace rz::lua::entities
     }
 }
 
-#endif //RZ_GAME2_LUAHOOKS_HPP
+#endif //RZ_GAME3_LUAHOOKS_HPP

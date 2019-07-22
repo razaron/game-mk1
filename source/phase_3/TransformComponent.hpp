@@ -1,5 +1,5 @@
-#ifndef RZ_GAME2_TRANSFORMCOMPONENT_HPP
-#define RZ_GAME2_TRANSFORMCOMPONENT_HPP
+#ifndef RZ_GAME3_TRANSFORMCOMPONENT_HPP
+#define RZ_GAME3_TRANSFORMCOMPONENT_HPP
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -27,4 +27,4 @@ namespace rz::game::components
     };
 }
 
-#endif //RZ_GAME2_TRANSFORMCOMPONENT_HPP
+#endif //RZ_GAME3_TRANSFORMCOMPONENT_HPP

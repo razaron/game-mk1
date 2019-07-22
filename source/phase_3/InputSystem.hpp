@@ -1,5 +1,5 @@
-#ifndef RZ_GAME2_INPUTSYSTEM_HPP
-#define RZ_GAME2_INPUTSYSTEM_HPP
+#ifndef RZ_GAME3_INPUTSYSTEM_HPP
+#define RZ_GAME3_INPUTSYSTEM_HPP
 
 #include "LuaHooks.hpp"
 #include "System.hpp"
@@ -29,4 +29,4 @@ namespace rz::game::systems
     };
 }
 
-#endif //RZ_GAME2_INPUTSYSTEM_HPP
+#endif //RZ_GAME3_INPUTSYSTEM_HPP

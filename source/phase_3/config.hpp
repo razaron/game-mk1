@@ -1,5 +1,5 @@
-#ifndef RZ_GAME2_CONFIG_HPP
-#define RZ_GAME2_CONFIG_HPP
+#ifndef RZ_GAME3_CONFIG_HPP
+#define RZ_GAME3_CONFIG_HPP
 
 #include <glm/glm.hpp>
 
@@ -52,4 +52,4 @@ struct EVENTDATA_COLLISION
     EVENTDATA_COLLISION(UUID64 target, float distance, int group) : target{ target }, distance{ distance }, group{ group } {}
 };
 
-#endif //RZ_GAME2_CONFIG_HPP
+#endif //RZ_GAME3_CONFIG_HPP

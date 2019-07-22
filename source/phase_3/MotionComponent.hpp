@@ -1,5 +1,5 @@
-#ifndef RZ_GAME2_MOTIONCOMPONENT_HPP
-#define RZ_GAME2_MOTIONCOMPONENT_HPP
+#ifndef RZ_GAME3_MOTIONCOMPONENT_HPP
+#define RZ_GAME3_MOTIONCOMPONENT_HPP
 
 #include "Component.hpp"
 
@@ -19,4 +19,4 @@ namespace rz::game::components
     };
 }
 
-#endif //RZ_GAME2_MOTIONCOMPONENT_HPP
+#endif //RZ_GAME3_MOTIONCOMPONENT_HPP

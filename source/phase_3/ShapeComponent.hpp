@@ -1,5 +1,5 @@
-#ifndef RZ_GAME2_SHAPECOMPONENT_HPP
-#define RZ_GAME2_SHAPECOMPONENT_HPP
+#ifndef RZ_GAME3_SHAPECOMPONENT_HPP
+#define RZ_GAME3_SHAPECOMPONENT_HPP
 
 #include <glm/glm.hpp>
 
@@ -19,4 +19,4 @@ namespace rz::game::components
     };
 }
 
-#endif //RZ_GAME2_SHAPECOMPONENT_HPP
+#endif //RZ_GAME3_SHAPECOMPONENT_HPP
