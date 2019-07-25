@@ -206,7 +206,7 @@ Effects = {
                 ["behaviour"] = "SEEK",
 
                 ["effect"] = function()
-                    if self.blackboard.target and (glm.length(self.pos - self.blackboard.target.pos) < 500/4 or self.blackboard.target.isDead) then
+                    if self.blackboard.target and (glm.length(self.pos - self.blackboard.target.pos) < 256/4 or self.blackboard.target.isDead) then
                         return true
                     else 
                         return false
@@ -224,11 +224,11 @@ Effects = {
 
                 ["effect"] = function()
                     if not self.blackboard.target.isDead and self.ammo > 0 then
-                        if glm.length(self.pos - self.blackboard.target.pos) > 128 then
+                        if glm.length(self.pos - self.blackboard.target.pos) > 64 then
                             self.blackboard.target = false
                             return true
                         else
-                            if glm.length(self.pos - self.blackboard.target.pos) < 64 then
+                            if glm.length(self.pos - self.blackboard.target.pos) < 32 then
                                 self:shoot(self.blackboard.target.pos)
                             end
                             return false
@@ -249,11 +249,11 @@ Effects = {
 
                 ["effect"] = function()
                     if not self.blackboard.target.isDead then
-                        if glm.length(self.pos - self.blackboard.target.pos) > 128 then
+                        if glm.length(self.pos - self.blackboard.target.pos) > 64 then
                             self.blackboard.target = false
 
                             return true
-                        elseif glm.length(self.pos - self.blackboard.target.pos) < 32 then
+                        elseif glm.length(self.pos - self.blackboard.target.pos) < 16 then
                             self.blackboard.target.isDead = true
                             self.blackboard.target = false
 
@@ -304,7 +304,7 @@ Effects = {
 
                 ["effect"] = function()
                     self:sense()
-                    if self.blackboard.threat ~= 0 or (self.ammo < 3 and self.blackboard.ammoAvailable) or glm.length(self.pos - deposit.pos) < 16/4 then
+                    if self.blackboard.threat ~= 0 or (self.ammo < 3 and self.blackboard.ammoAvailable) or glm.length(self.pos - deposit.pos) < 8/4 then
                         return true
                     else
                         return false
@@ -354,7 +354,7 @@ Effects = {
                     elseif deposit.value == 0 then
                         deposit.serving = deposit.serving - 1
                         return true
-                    elseif self.lastMine > 0.1 and glm.length(self.pos - deposit.pos) < 64/4 then
+                    elseif self.lastMine > 0.1 and glm.length(self.pos - deposit.pos) < 32/4 then
                         self.lastMine = 0
 
                         deposit.value = deposit.value - 1
@@ -391,7 +391,7 @@ Effects = {
                 ["effect"] = function()
                     if self.resource == 0 then
                         return true
-                    elseif self.lastCraft > 1 and glm.length(self.pos - base.pos) < 64/4 then
+                    elseif self.lastCraft > 1 and glm.length(self.pos - base.pos) < 32/4 then
                         self.lastCraft = 0
 
                         self.resource = self.resource - 1
@@ -427,7 +427,7 @@ Effects = {
                     if base.ammo == 0 or self.blackboard.threat > 0 then
                         base.resupplying = base.resupplying - 1
                         return true
-                    elseif glm.length(self.pos - base.pos) < 64/4 then
+                    elseif glm.length(self.pos - base.pos) < 32/4 then
                         self.ammo = self.ammo + 1
                         base.ammo = base.ammo - 1
                         base.resupplying = base.resupplying - 1

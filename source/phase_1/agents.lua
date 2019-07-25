@@ -87,9 +87,9 @@ function Agent:move(target, behaviour)
     if behaviour == "SEEK" then
         steering = self.steer:seek(self.pos, target, self.vel)
     elseif behaviour == "ARRIVE" then
-        steering = self.steer:arrive(self.pos, target, self.vel, 500)
+        steering = self.steer:arrive(self.pos, target, self.vel, 256)
     elseif behaviour == "MAINTAIN" then
-        steering = self.steer:maintain(self.pos, target, self.vel, 128)
+        steering = self.steer:maintain(self.pos, target, self.vel, 64)
     elseif behaviour == "WANDER" then
         steering = self.steer:wander(self.vel)
     end
@@ -196,7 +196,7 @@ function Soldier:shoot(target)
         self.lastShot = 0
         self.ammo = self.ammo - 1
 
-        local dest = glm.normalize(target - self.pos) * 256
+        local dest = glm.normalize(target - self.pos) * 128
         self.theta = glm.angle(dest, glm.vec2.new(1, 0))
 
         if self.theta > self.rot - 3.14159 / 2 and self.theta < self.rot + 3.14159 / 2 then
@@ -216,7 +216,7 @@ function Soldier:sense()
     self.blackboard.threat = 0
     for i = 1, #game.agents do
         local agent = game.agents[i]
-        if self.team ~= agent.team and glm.length(self.pos - agent.pos) < 1024 then
+        if self.team ~= agent.team and glm.length(self.pos - agent.pos) < 512 then
             self.blackboard.threat = self.blackboard.threat + 1
         end
     end
@@ -403,7 +403,7 @@ function Worker:sense()
     self.blackboard.threat = 0
     for i = 1, #game.agents do
         local agent = game.agents[i]
-        if self.team ~= agent.team and glm.length(self.pos - agent.pos) < 1024 then
+        if self.team ~= agent.team and glm.length(self.pos - agent.pos) < 512 then
             self.blackboard.threat = self.blackboard.threat + 1
         end
     end

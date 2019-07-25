@@ -6,13 +6,14 @@ Bullet = {
     transform = nil, pos = {},
     shape = nil,
 
-    owner = "BLUE",
+    team = "BLUE",
+    group = 0,
     direction = glm.vec2.new(0, 0),
     origin = glm.vec2.new(0, 0),
     isDead = false
 }
 
-function Bullet.new(owner, pos, direction)
+function Bullet.new(team, pos, direction)
     local self = {}
     setmetatable(self, {__index = Bullet})
 
@@ -22,10 +23,15 @@ function Bullet.new(owner, pos, direction)
 
     self.pos = pos
 
-    self.owner = owner or Bullet.owner
+    self.team = team or Bullet.team
     self.direction = direction or Bullet.direction
     self.origin = pos or Bullet.origin
     self.isDead = false
+
+    if self.team == "RED" then self.group = GROUP.RED
+    elseif self.team == "GREEN" then self.group = GROUP.GREEN 
+    elseif self.team == "BLUE" then self.group = GROUP.BLUE 
+    elseif self.team == "YELLOW" then self.group = GROUP.YELLOW end
 
     newBullet(self, pos or glm.vec2.new(512, 512), glm.u8vec3.new(255, 255, 255), glm.normalize(direction))
 
@@ -42,8 +48,40 @@ function Bullet:update()
         return
     end
 
-    if self.owner == "RED" then self.collisions = getCollisions(self.uuid, 2)
-    elseif self.owner == "BLUE" then self.collisions = getCollisions(self.uuid, 1) end
+    -- get collisions
+    if(self.team == "RED") then
+        self.collisions = getCollisions(self.uuid, GROUP.GREEN)
+        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+            self.collisions:add(col)
+        end
+        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
+            self.collisions:add(col)
+        end
+    elseif(self.team == "GREEN") then
+        self.collisions = getCollisions(self.uuid, GROUP.RED)
+        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+            self.collisions:add(col)
+        end
+        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
+            self.collisions:add(col)
+        end
+    elseif(self.team == "BLUE") then
+        self.collisions = getCollisions(self.uuid, GROUP.RED)
+        for _, col in pairs(getCollisions(self.uuid, GROUP.GREEN)) do
+            self.collisions:add(col)
+        end
+        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
+            self.collisions:add(col)
+        end
+    elseif(self.team == "YELLOW") then
+        self.collisions = getCollisions(self.uuid, GROUP.RED)
+        for _, col in pairs(getCollisions(self.uuid, GROUP.GREEN)) do
+            self.collisions:add(col)
+        end
+        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+            self.collisions:add(col)
+        end
+    end
 
     -- handle bullet-agent collision
     local uid = 0;
@@ -120,8 +158,11 @@ function Agent.new(name, pos, sides, col, team)
     self.team = team
 
     local group = 0
-    if team == "RED" then group = 1
-    elseif team == "BLUE" then group = 2 end
+    
+    if self.team == "RED" then group = GROUP.RED
+    elseif self.team == "GREEN" then group = GROUP.GREEN 
+    elseif self.team == "BLUE" then group = GROUP.BLUE 
+    elseif self.team == "YELLOW" then group = GROUP.YELLOW end
 
     newAgent(self, pos or glm.vec2.new(512, 512), sides or 3, col or glm.u8vec3.new(200, 200, 200), group)
 
@@ -130,8 +171,41 @@ end
 
 function Agent:update()
     self.pos = glm.vec2.new(self.transform.translation)
-    if self.team == "RED" then self.collisions = getCollisions(self.uuid, 2)
-    elseif self.team == "BLUE" then self.collisions = getCollisions(self.uuid, 1) end
+    
+    -- get collisions
+    if(self.team == "RED") then
+        self.collisions = getCollisions(self.uuid, GROUP.GREEN)
+        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+            self.collisions:add(col)
+        end
+        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
+            self.collisions:add(col)
+        end
+    elseif(self.team == "GREEN") then
+        self.collisions = getCollisions(self.uuid, GROUP.RED)
+        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+            self.collisions:add(col)
+        end
+        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
+            self.collisions:add(col)
+        end
+    elseif(self.team == "BLUE") then
+        self.collisions = getCollisions(self.uuid, GROUP.RED)
+        for _, col in pairs(getCollisions(self.uuid, GROUP.GREEN)) do
+            self.collisions:add(col)
+        end
+        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
+            self.collisions:add(col)
+        end
+    elseif(self.team == "YELLOW") then
+        self.collisions = getCollisions(self.uuid, GROUP.RED)
+        for _, col in pairs(getCollisions(self.uuid, GROUP.GREEN)) do
+            self.collisions:add(col)
+        end
+        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+            self.collisions:add(col)
+        end
+    end
 
     if self.curAction > 0 then
         local action = self.curPlan[self.curAction]
@@ -251,7 +325,7 @@ function Soldier:shoot(target)
         self.lastShot = 0
         self.ammo = self.ammo - 1
 
-        local dest = glm.normalize(target - self.pos) * 256 / 5
+        local dest = glm.normalize(target - self.pos) * 128 / 5
         self.theta = glm.angle(dest, glm.vec2.new(1, 0))
 
         if self.theta > self.transform.rotation - 3.14159 / 2 and self.theta < self.transform.rotation + 3.14159 / 2 then

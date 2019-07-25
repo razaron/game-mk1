@@ -61,55 +61,54 @@ game = {
     bases = {},
     deposits = {},
     bullets = {},
-    wins = {blue = 0, red = 0}
+    wins = {red = 0, green = 0, blue = 0, yellow = 0}
 }
 
 function game.init()
     -- BASES
-    local blueBase = Base.new("BLUE", glm.vec2.new(256 / 5 + 1024/10, 256 / 5 + 1024/10), glm.u8vec3.new(100, 100, 255))
-    blueBase.cycle = 0
+    local bases = {}
+    table.insert(bases, Base.new("RED", glm.vec2.new(128, 128), glm.u8vec3.new(255, 100, 100)))
+    table.insert(bases, Base.new("GREEN", glm.vec2.new(896, 128), glm.u8vec3.new(100, 255, 100)))
+    table.insert(bases, Base.new("BLUE", glm.vec2.new(896, 896), glm.u8vec3.new(100, 100, 255)))
+    table.insert(bases, Base.new("YELLOW", glm.vec2.new(128, 896), glm.u8vec3.new(255, 255, 100)))
+    
+    for _, base in pairs(bases) do
+        base.cycle = 0
 
-    factory.construct(
-        blueBase,
-        "bases",
-        {"transform", "shape"}
-    )
-
-    local redBase = Base.new("RED", glm.vec2.new((4096 - 256) / 5 + 1024/10, (4096 - 256) / 5 + 1024/10), glm.u8vec3.new(100, 100, 255))
-    redBase.cycle = 0
-
-    factory.construct(
-        redBase,
-        "bases",
-        {"transform", "shape"}
-    )
+        factory.construct(
+            base,
+            "bases",
+            {"transform", "shape"}
+        )
+    end
 
     -- RESOURCE DEPOSITS
-    factory.construct(
-        Deposit.new(glm.vec2.new(1024 / 5 + 1024/10, 1024 / 5 + 1024/10), 1.0),
-        "deposits",
-        {"transform", "shape"}
-    )
-    factory.construct(
-        Deposit.new(glm.vec2.new(1024 / 5 + 1024/10, 3072 / 5 + 1024/10), 0.0),
-        "deposits",
-        {"transform", "shape"}
-    )
-    factory.construct(
-        Deposit.new(glm.vec2.new(2048 / 5 + 1024/10, 2048 / 5 + 1024/10), 0.0),
-        "deposits",
-        {"transform", "shape"}
-    )
-    factory.construct(
-        Deposit.new(glm.vec2.new(3072 / 5 + 1024/10, 1024 / 5 + 1024/10), 0.0),
-        "deposits",
-        {"transform", "shape"}
-    )
-    factory.construct(
-        Deposit.new(glm.vec2.new(3072 / 5 + 1024/10, 3072 / 5 + 1024/10), - 1.0),
-        "deposits",
-        {"transform", "shape"}
-    )
+    local deposits = {}
+    table.insert(deposits, Deposit.new(glm.vec2.new(192, 192), {red = 1.0, green = 0.0, blue = 0.0, yellow = 0.0}))
+    table.insert(deposits, Deposit.new(glm.vec2.new(832, 192), {red = 0.0, green = 1.0, blue = 0.0, yellow = 0.0}))
+    table.insert(deposits, Deposit.new(glm.vec2.new(832, 832), {red = 0.0, green = 0.0, blue = 1.0, yellow = 0.0}))
+    table.insert(deposits, Deposit.new(glm.vec2.new(192, 832), {red = 0.0, green = 0.0, blue = 0.0, yellow = 1.0}))
+
+    local start = 256
+    local span = 512
+    local size = 2
+    for i = 0, size, 1 do
+        for j = 0, size, 1 do
+            local x = start + i * span / size
+            local y = start + j * span / size 
+            table.insert(deposits, Deposit.new(glm.vec2.new(x, y), {red = 0.0, green = 0.0, blue = 0.0, yellow = 0.0}))
+        end
+    end
+
+    for _, depo in pairs(deposits) do
+        base.cycle = 0
+
+        factory.construct(
+            depo,
+            "deposits",
+            {"transform", "shape"}
+        )
+    end
 
     --ProFi:start()
 end
@@ -183,16 +182,28 @@ end
 function isWon()
     -- Determine win state
     local redDead = true
+    local greenDead = true
     local blueDead = true
+    local yellowDead = true
     for _, a in pairs(game.agents) do
-        if not redDead and not blueDead then break
+        if not redDead and not greenDead and not blueDead and not yellowDead then break
         elseif a.team == "RED" then redDead = false
-        elseif a.team == "BLUE" then blueDead = false end
+        elseif a.team == "GREEN" then greenDead = false
+        elseif a.team == "BLUE" then blueDead = false
+        elseif a.team == "YELLOW" then yellowDead = false end
     end
 
-    if redDead or blueDead or #game.agents > 64 then
-        if blueDead then game.wins.red = game.wins.red + 1 end
-        if redDead then game.wins.blue = game.wins.blue + 1 end
+    local remaining = 4;
+    if redDead then remaining = remaining - 1 end
+    if greenDead then remaining = remaining - 1 end
+    if blueDead then remaining = remaining - 1 end
+    if yellowDead then remaining = remaining - 1 end
+
+    if remaining == 1 then
+        if not redDead then game.wins.red = game.wins.red + 1 end
+        if not greenDead then game.wins.green = game.wins.green + 1 end
+        if not blueDead then game.wins.blue = game.wins.blue + 1 end
+        if not yellowDead then game.wins.yellow = game.wins.yellow + 1 end
 
         for i = #game.agents, 1, - 1 do
             local agent = game.agents[i]
@@ -221,7 +232,7 @@ function isWon()
 
         factory.killAll()
         game.init()
-        print(tostring(game.wins.blue)..'\t'..tostring(game.wins.red))
+        print(tostring(game.wins.red)..'\t'..tostring(game.wins.green)..'\t'..tostring(game.wins.blue)..'\t'..tostring(game.wins.yellow))
 
         return true
     end

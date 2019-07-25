@@ -159,6 +159,15 @@ namespace rz::lua::entities
         using namespace rz::eventstream;
         using namespace rz::game::systems;
 
+
+        lua["GROUP"] = sol::new_table();
+        lua["GROUP"]["RED"] = GROUP_RED;
+        lua["GROUP"]["GREEN"] = GROUP_GREEN;
+        lua["GROUP"]["BLUE"] = GROUP_BLUE;
+        lua["GROUP"]["YELLOW"] = GROUP_YELLOW;
+        lua["GROUP"]["DEPOSIT"] = GROUP_DEPOSIT;
+        lua["GROUP"]["BULLET"] = GROUP_BULLET;
+
         lua["deleteEntity"] = [&events, &lua](const UUID64 &id) {
             Event e{
                 id,                             // Entity ID.
@@ -174,10 +183,10 @@ namespace rz::lua::entities
                 UUID64{ 0 },                 // Entity ID. 0 because unneeded
                 EventType::SPACE_NEW_ENTITY, // Event type enum
                 std::make_shared<SPACE_NEW_ENTITY>(std::list<ComponentArgs>{
-                    ComponentArgs{ ComponentType::TRANSFORM, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 6.4f, 6.4f }, 0.f) },
-                    ComponentArgs{ ComponentType::MOTION, std::make_shared<MotionArgs>(obj, glm::vec2{}, glm::vec2{}, 125.f, 125.f, 1.f) },
+                    ComponentArgs{ ComponentType::TRANSFORM, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 6.4f, 6.4f } / 2.f, 0.f) },
+                    ComponentArgs{ ComponentType::MOTION, std::make_shared<MotionArgs>(obj, glm::vec2{}, glm::vec2{}, 126.f / 2.f, 126.f / 2.f, 1.f) },
                     ComponentArgs{ ComponentType::SHAPE, std::make_shared<ShapeArgs>(obj, sides, col) },
-                    ComponentArgs{ ComponentType::COLLIDER, std::make_shared<ColliderArgs>(obj, 256.f, group) } })
+                    ComponentArgs{ ComponentType::COLLIDER, std::make_shared<ColliderArgs>(obj, 256.f / 2.f, group) } })
             };
 
             events.push_back(e);
@@ -188,7 +197,7 @@ namespace rz::lua::entities
                 UUID64{ 0 },                 // Entity ID. 0 because unneeded
                 EventType::SPACE_NEW_ENTITY, // Event type enum
                 std::make_shared<SPACE_NEW_ENTITY>(std::list<ComponentArgs>{
-                    ComponentArgs{ ComponentType::TRANSFORM, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 25.6f, 25.6f }, -3.14159 / 4) },
+                    ComponentArgs{ ComponentType::TRANSFORM, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 25.6f, 25.6f } / 2.f, -3.14159 / 4) },
                     ComponentArgs{ ComponentType::SHAPE, std::make_shared<ShapeArgs>(obj, 4, col) } })
             };
 
@@ -200,9 +209,9 @@ namespace rz::lua::entities
                 UUID64{ 0 },                 // Entity ID. 0 because unneeded
                 EventType::SPACE_NEW_ENTITY, // Event type enum
                 std::make_shared<SPACE_NEW_ENTITY>(std::list<ComponentArgs>{
-                    ComponentArgs{ ComponentType::TRANSFORM, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 12.8f, 12.8f }, 0.f) },
+                    ComponentArgs{ ComponentType::TRANSFORM, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 12.8f, 12.8f } / 2.f, 0.f) },
                     ComponentArgs{ ComponentType::SHAPE, std::make_shared<ShapeArgs>(obj, 4, col) },
-                    ComponentArgs{ ComponentType::COLLIDER, std::make_shared<ColliderArgs>(obj, 16.f, 3) } })
+                    ComponentArgs{ ComponentType::COLLIDER, std::make_shared<ColliderArgs>(obj, 16.f / 2.f, GROUP_DEPOSIT) } })
             };
 
             events.push_back(e);
@@ -213,10 +222,10 @@ namespace rz::lua::entities
                 UUID64{ 0 },                 // Entity ID. 0 because unneeded
                 EventType::SPACE_NEW_ENTITY, // Event type enum
                 std::make_shared<SPACE_NEW_ENTITY>(std::list<ComponentArgs>{
-                    ComponentArgs{ ComponentType::TRANSFORM, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 1.6f, 1.6f }, 0.f) },
-                    ComponentArgs{ ComponentType::MOTION, std::make_shared<MotionArgs>(obj, dir * 512.f, glm::vec2{}, 64.f, 64.f, 1.f) },
+                    ComponentArgs{ ComponentType::TRANSFORM, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 1.6f, 1.6f } / 2.f, 0.f) },
+                    ComponentArgs{ ComponentType::MOTION, std::make_shared<MotionArgs>(obj, dir * 512.f, glm::vec2{}, 64.f / 2.f, 64.f / 2.f, 1.f) },
                     ComponentArgs{ ComponentType::SHAPE, std::make_shared<ShapeArgs>(obj, 16, col) },
-                    ComponentArgs{ ComponentType::COLLIDER, std::make_shared<ColliderArgs>(obj, 16.f, 4) } })
+                    ComponentArgs{ ComponentType::COLLIDER, std::make_shared<ColliderArgs>(obj, 16.f / 2.f, GROUP_BULLET) } })
             };
 
             events.push_back(e);

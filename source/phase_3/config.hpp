@@ -15,9 +15,11 @@ const unsigned SCREEN_HEIGHT = 1024u;
 
 const int GROUP_ALL = 0;
 const int GROUP_RED = 1;
-const int GROUP_BLUE = 2;
-const int GROUP_BULLETS = 3;
-const int GROUP_DEPOSITS = 4;
+const int GROUP_GREEN = 2;
+const int GROUP_BLUE = 3;
+const int GROUP_YELLOW = 4;
+const int GROUP_BULLET = 5;
+const int GROUP_DEPOSIT = 6;
 
 enum class SteeringBehaviour
 {

@@ -113,8 +113,8 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 
 					glm::vec2 desired = glm::normalize(target->translation - t->translation) * m->maxVelocity;
 
-					if (glm::length(target->translation - t->translation) < 125.f)
-						desired *= glm::length(target->translation - t->translation) / 125.f;
+					if (glm::length(target->translation - t->translation) < 128.f / 2.f)
+						desired *= glm::length(target->translation - t->translation) / (128.f / 2.f);
 
 					steering = desired - m->velocity;
 
@@ -127,8 +127,8 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 				{
 					glm::vec2 desired = glm::normalize(target->translation - t->translation) * m->maxVelocity;
 
-					if (glm::length(target->translation - t->translation) < 32.f)
-						desired *= -(1 - glm::length(target->translation - t->translation) / 32.f);
+					if (glm::length(target->translation - t->translation) < 32.f / 2.f)
+						desired *= -(1 - glm::length(target->translation - t->translation) / (32.f / 2.f));
 
 					steering = desired - m->velocity;
 

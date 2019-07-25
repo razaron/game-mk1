@@ -1,6 +1,6 @@
 Steering = {
-    maxVelocity = 500,
-    maxForce = 500,
+    maxVelocity = 256,
+    maxForce = 256,
     mass = 1.0,
     wanderAngle = 0.0
 }
