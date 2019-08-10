@@ -11,7 +11,7 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
 {
     _interval = 0.01;
 
-    _componentTypes.insert(ComponentType::SHAPE);
+    _componentTypes.insert(ComponentType{"SHAPE"});
 
     _lua.new_usertype<ShapeComponent>("ShapeComponent",
                                       sol::constructors<ShapeComponent()>(),
@@ -77,13 +77,13 @@ Task RenderSystem::update(EntityMap &entities, double)
 
         for (auto &[id, entity] : _entities)
         {
-            if (!entity.has(ComponentType::SHAPE))
+            if (!entity.has(ComponentType{"SHAPE"}))
                 continue;
             if (_models.find(id) == _models.end())
                 continue;
 
             auto model = _models[id];
-            auto shape = *getObject<ShapeComponent>(entity[ComponentType::SHAPE]);
+            auto shape = *getObject<ShapeComponent>(entity[ComponentType{"SHAPE"}]);
 
             _data.push_back(std::make_pair(model, shape));
         }
@@ -96,11 +96,9 @@ Task RenderSystem::update(EntityMap &entities, double)
 
 ComponentHandle RenderSystem::createComponent(ComponentType type, std::shared_ptr<void> tuplePtr)
 {
-    Handle h;
+    Handle h{};
 
-    switch (type)
-    {
-    case ComponentType::SHAPE:
+    if(type == "SHAPE")
     {
         ShapeArgs args = *(std::static_pointer_cast<ShapeArgs>(tuplePtr));
 
@@ -108,34 +106,17 @@ ComponentHandle RenderSystem::createComponent(ComponentType type, std::shared_pt
 
         sol::table obj = std::get<0>(args);
         obj["shape"] = getObject<ShapeComponent>(h);
-
-        break;
-    }
-    default:
-    {
-        h = Handle{};
-        break;
-    }
     }
 
-    return ComponentHandle{type, h};
+    return ComponentHandle{ type, h };
 }
 
 bool RenderSystem::removeComponent(ComponentHandle ch)
 {
-    Handle h;
-
-    switch (ch.first)
-    {
-    case ComponentType::SHAPE:
+    if(ch.first == "SHAPE")
         removeObject<ShapeComponent>(ch.second);
-        break;
-    default:
-        return false;
-        break;
-    }
-
-    return true;
+    
+    return false;
 }
 
 void RenderSystem::render()

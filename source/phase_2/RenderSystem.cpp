@@ -11,7 +11,7 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
 {
     _interval = 0.01;
 
-    _componentTypes.insert(ComponentType::SHAPE);
+    _componentTypes.insert(ComponentType{"SHAPE"});
 
     _lua.new_usertype<ShapeComponent>("ShapeComponent",
                                       sol::constructors<ShapeComponent()>(),
@@ -73,11 +73,11 @@ Task RenderSystem::update(EntityMap &entities, double)
 
     for (auto & [ id, entity ] : entities)
     {
-        if (!entity.has(ComponentType::SHAPE)) continue;
+        if (!entity.has(ComponentType{"SHAPE"})) continue;
         if (_models.find(id) == _models.end()) continue;
 
         auto model = _models[id];
-        auto shape = *getObject<ShapeComponent>(entity[ComponentType::SHAPE]);
+        auto shape = *getObject<ShapeComponent>(entity[ComponentType{"SHAPE"}]);
 
         _data.push_back(std::make_pair(model, shape));
     }
@@ -87,26 +87,16 @@ Task RenderSystem::update(EntityMap &entities, double)
 
 ComponentHandle RenderSystem::createComponent(ComponentType type, std::shared_ptr<void> tuplePtr)
 {
-    Handle h;
+    Handle h{};
 
-    switch (type)
+    if(type == "SHAPE")
     {
-        case ComponentType::SHAPE:
-        {
-            ShapeArgs args = *(std::static_pointer_cast<ShapeArgs>(tuplePtr));
+        ShapeArgs args = *(std::static_pointer_cast<ShapeArgs>(tuplePtr));
 
-            h = emplaceObject<ShapeComponent>(std::get<1>(args), std::get<2>(args));
+        h = emplaceObject<ShapeComponent>(std::get<1>(args), std::get<2>(args));
 
-            sol::table obj = std::get<0>(args);
-            obj["shape"] = getObject<ShapeComponent>(h);
-
-            break;
-        }
-        default:
-        {
-            h = Handle{};
-            break;
-        }
+        sol::table obj = std::get<0>(args);
+        obj["shape"] = getObject<ShapeComponent>(h);
     }
 
     return ComponentHandle{ type, h };
@@ -114,19 +104,10 @@ ComponentHandle RenderSystem::createComponent(ComponentType type, std::shared_pt
 
 bool RenderSystem::removeComponent(ComponentHandle ch)
 {
-    Handle h;
-
-    switch (ch.first)
-    {
-        case ComponentType::SHAPE:
-            removeObject<ShapeComponent>(ch.second);
-            break;
-        default:
-            return false;
-            break;
-    }
-
-    return true;
+    if(ch.first == "SHAPE")
+        removeObject<ShapeComponent>(ch.second);
+    
+    return false;
 }
 
 void RenderSystem::render()

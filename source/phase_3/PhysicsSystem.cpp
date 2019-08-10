@@ -11,10 +11,10 @@ PhysicsSystem::PhysicsSystem(sol::state_view lua)
 {
 	_interval = 0.01;
 
-	_componentTypes.insert(ComponentType::TRANSFORM);
-	_componentTypes.insert(ComponentType::MOTION);
-	_componentTypes.insert(ComponentType::COLLIDER);
-
+	_componentTypes.insert(ComponentType{"TRANSFORM"});
+	_componentTypes.insert(ComponentType{"MOTION"});
+	_componentTypes.insert(ComponentType{"COLLIDER"});
+	
 	_lua.new_usertype<TransformComponent>("TransformComponent",
 										  sol::constructors<TransformComponent()>(),
 										  "translation", &TransformComponent::translation,
@@ -64,18 +64,18 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 		ColliderVec colliders;
 		for (auto &[id, entity] : _entities)
 		{
-			if (entity.has(ComponentType::MOTION, ComponentType::TRANSFORM))
+			if (entity.has(ComponentType{"MOTION"}, ComponentType{"TRANSFORM"}))
 			{
-				auto t = getObject<TransformComponent>(entity[ComponentType::TRANSFORM]);
-				auto m = getObject<MotionComponent>(entity[ComponentType::MOTION]);
+				auto t = getObject<TransformComponent>(entity[ComponentType{"TRANSFORM"}]);
+				auto m = getObject<MotionComponent>(entity[ComponentType{"MOTION"}]);
 
 				bodies[id] = std::make_pair(t, m);
 			}
 
-			if (entity.has(ComponentType::COLLIDER, ComponentType::TRANSFORM))
+			if (entity.has(ComponentType{"COLLIDER"}, ComponentType{"TRANSFORM"}))
 			{
-				auto t = getObject<TransformComponent>(entity[ComponentType::TRANSFORM]);
-				auto c = getObject<ColliderComponent>(entity[ComponentType::COLLIDER]);
+				auto t = getObject<TransformComponent>(entity[ComponentType{"TRANSFORM"}]);
+				auto c = getObject<ColliderComponent>(entity[ComponentType{"COLLIDER"}]);
 
 				colliders.push_back(std::make_tuple(id, t, c));
 			}
@@ -92,9 +92,9 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 				auto behaviour = it->second.first;
 				TransformComponent *target;
 
-				if (_entities.find(it->second.second) != _entities.end() && _entities.find(it->second.second)->second.has(ComponentType::TRANSFORM))
+				if (_entities.find(it->second.second) != _entities.end() && _entities.find(it->second.second)->second.has(ComponentType{"TRANSFORM"}))
 				{
-					target = getObject<TransformComponent>((_entities.at(it->second.second))[ComponentType::TRANSFORM]);
+					target = getObject<TransformComponent>((_entities.at(it->second.second))[ComponentType{"TRANSFORM"}]);
 				}
 				else
 				{
@@ -223,10 +223,10 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 		// Send model matrixes to RenderSystem
 		for (auto &[id, entity] : _entities)
 		{
-			if (!entity.has(ComponentType::TRANSFORM))
+			if (!entity.has(ComponentType{"TRANSFORM"}))
 				continue;
 
-			auto transform = getObject<TransformComponent>(entity[ComponentType::TRANSFORM]);
+			auto transform = getObject<TransformComponent>(entity[ComponentType{"TRANSFORM"}]);
 
 			events.emplace_back(
 				id,
@@ -244,11 +244,9 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 
 ComponentHandle PhysicsSystem::createComponent(ComponentType type, std::shared_ptr<void> tuplePtr)
 {
-	Handle h;
+	Handle h{};
 
-	switch (type)
-	{
-	case ComponentType::TRANSFORM:
+	if(type == "TRANSFORM")
 	{
 		TransformArgs args = *(std::static_pointer_cast<TransformArgs>(tuplePtr));
 
@@ -256,21 +254,17 @@ ComponentHandle PhysicsSystem::createComponent(ComponentType type, std::shared_p
 
 		sol::table obj = std::get<0>(args);
 		obj["transform"] = getObject<TransformComponent>(h);
-
-		break;
 	}
-	case ComponentType::MOTION:
+	else if(type == "MOTION")
 	{
-		MotionArgs args = *(std::static_pointer_cast<MotionArgs>(tuplePtr));
+		MotionArgs	args = *(std::static_pointer_cast<MotionArgs>(tuplePtr));
 
 		h = emplaceObject<MotionComponent>(std::get<1>(args), std::get<2>(args), std::get<3>(args), std::get<4>(args), std::get<5>(args));
 
 		sol::table obj = std::get<0>(args);
 		obj["motion"] = getObject<MotionComponent>(h);
-
-		break;
 	}
-	case ComponentType::COLLIDER:
+	else if(type == "COLLIDER")
 	{
 		ColliderArgs args = *(std::static_pointer_cast<ColliderArgs>(tuplePtr));
 
@@ -278,38 +272,21 @@ ComponentHandle PhysicsSystem::createComponent(ComponentType type, std::shared_p
 
 		sol::table obj = std::get<0>(args);
 		obj["collider"] = getObject<ColliderComponent>(h);
-
-		break;
-	}
-	default:
-	{
-		h = Handle{};
-		break;
-	}
 	}
 
-	return ComponentHandle{type, h};
+	return ComponentHandle{ type, h };
 }
 
 bool PhysicsSystem::removeComponent(ComponentHandle ch)
 {
-	Handle h;
-
-	switch (ch.first)
-	{
-	case ComponentType::TRANSFORM:
+	if(ch.first == "TRANSFORM")
 		removeObject<TransformComponent>(ch.second);
-		break;
-	case ComponentType::MOTION:
+	else if(ch.first == "MOTION")
 		removeObject<MotionComponent>(ch.second);
-		break;
-	case ComponentType::COLLIDER:
+	else if(ch.first == "COLLIDER")
 		removeObject<ColliderComponent>(ch.second);
-		break;
-	default:
+	else
 		return false;
-		break;
-	}
 
 	return true;
 }

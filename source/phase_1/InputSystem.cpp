@@ -144,6 +144,8 @@ Task InputSystem::update(EntityMap &, double delta)
 						processKey("4", true);
 						break;
 					}
+					default:
+					break;
 				}
 				break;
 			}
@@ -169,36 +171,20 @@ Task InputSystem::update(EntityMap &, double delta)
 				processMouse("move", event.mouseMove.x, event.mouseMove.y);
 				break;
 			}
+			default:
+			break;
 		}
 	}
 
 	return Task{};
 }
 
-ComponentHandle InputSystem::createComponent(ComponentType type, std::shared_ptr<void>)
+ComponentHandle InputSystem::createComponent(ComponentType, std::shared_ptr<void>)
 {
-	Handle h;
-
-	switch (type)
-	{
-		default:
-			h = Handle{};
-			break;
-	}
-
-	return ComponentHandle{ type, h };
+	return {};
 }
 
-bool InputSystem::removeComponent(ComponentHandle ch)
+bool InputSystem::removeComponent(ComponentHandle)
 {
-	Handle h;
-
-	switch (ch.first)
-	{
-		default:
-			return false;
-			break;
-	}
-
-	return true;
+	return false;
 }
