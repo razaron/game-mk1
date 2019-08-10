@@ -49,36 +49,29 @@ function Bullet:update()
     end
 
     -- get collisions
-    if(self.team == "RED") then
-        self.collisions = getCollisions(self.uuid, GROUP.GREEN)
-        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+    local redCol = getCollisions(self.uuid, GROUP.RED)
+    local greenCol = getCollisions(self.uuid, GROUP.GREEN)
+    local blueCol = getCollisions(self.uuid, GROUP.BLUE)
+    local yellowCol = getCollisions(self.uuid, GROUP.YELLOW)
+
+    self.collisions = getCollisions(self.uuid, -1)
+    if(self.team ~= "RED") then
+        for _, col in pairs(redCol) do
             self.collisions:add(col)
         end
-        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
+    end
+    if(self.team ~= "GREEN") then
+        for _, col in pairs(greenCol) do
             self.collisions:add(col)
         end
-    elseif(self.team == "GREEN") then
-        self.collisions = getCollisions(self.uuid, GROUP.RED)
-        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+    end
+    if(self.team ~= "BLUE") then
+        for _, col in pairs(blueCol) do
             self.collisions:add(col)
         end
-        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
-            self.collisions:add(col)
-        end
-    elseif(self.team == "BLUE") then
-        self.collisions = getCollisions(self.uuid, GROUP.RED)
-        for _, col in pairs(getCollisions(self.uuid, GROUP.GREEN)) do
-            self.collisions:add(col)
-        end
-        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
-            self.collisions:add(col)
-        end
-    elseif(self.team == "YELLOW") then
-        self.collisions = getCollisions(self.uuid, GROUP.RED)
-        for _, col in pairs(getCollisions(self.uuid, GROUP.GREEN)) do
-            self.collisions:add(col)
-        end
-        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+    end
+    if(self.team ~= "YELLOW") then
+        for _, col in pairs(yellowCol) do
             self.collisions:add(col)
         end
     end
@@ -173,36 +166,29 @@ function Agent:update()
     self.pos = glm.vec2.new(self.transform.translation)
     
     -- get collisions
-    if(self.team == "RED") then
-        self.collisions = getCollisions(self.uuid, GROUP.GREEN)
-        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+    local redCol = getCollisions(self.uuid, GROUP.RED)
+    local greenCol = getCollisions(self.uuid, GROUP.GREEN)
+    local blueCol = getCollisions(self.uuid, GROUP.BLUE)
+    local yellowCol = getCollisions(self.uuid, GROUP.YELLOW)
+
+    self.collisions = getCollisions(self.uuid, -1)
+    if(self.team ~= "RED") then
+        for _, col in pairs(redCol) do
             self.collisions:add(col)
         end
-        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
+    end
+    if(self.team ~= "GREEN") then
+        for _, col in pairs(greenCol) do
             self.collisions:add(col)
         end
-    elseif(self.team == "GREEN") then
-        self.collisions = getCollisions(self.uuid, GROUP.RED)
-        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+    end
+    if(self.team ~= "BLUE") then
+        for _, col in pairs(blueCol) do
             self.collisions:add(col)
         end
-        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
-            self.collisions:add(col)
-        end
-    elseif(self.team == "BLUE") then
-        self.collisions = getCollisions(self.uuid, GROUP.RED)
-        for _, col in pairs(getCollisions(self.uuid, GROUP.GREEN)) do
-            self.collisions:add(col)
-        end
-        for _, col in pairs(getCollisions(self.uuid, GROUP.YELLOW)) do
-            self.collisions:add(col)
-        end
-    elseif(self.team == "YELLOW") then
-        self.collisions = getCollisions(self.uuid, GROUP.RED)
-        for _, col in pairs(getCollisions(self.uuid, GROUP.GREEN)) do
-            self.collisions:add(col)
-        end
-        for _, col in pairs(getCollisions(self.uuid, GROUP.BLUE)) do
+    end
+    if(self.team ~= "YELLOW") then
+        for _, col in pairs(yellowCol) do
             self.collisions:add(col)
         end
     end
