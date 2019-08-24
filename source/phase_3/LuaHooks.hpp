@@ -171,7 +171,7 @@ namespace rz::lua::entities
         lua["deleteEntity"] = [&events, &lua](const UUID64 &id) {
             Event e{
                 id,                             // Entity ID.
-                EventType::SPACE_DELETE_ENTITY, // Event type enum
+                EventType{"SPACE_DELETE_ENTITY"}, // Event type enum
                 std::make_shared<SPACE_DELETE_ENTITY>()
             };
 
@@ -181,7 +181,7 @@ namespace rz::lua::entities
         lua["newAgent"] = [&events, &lua](sol::table obj, glm::vec2 pos, int sides, glm::u8vec3 col, int group) {
             Event e{
                 UUID64{ 0 },                 // Entity ID. 0 because unneeded
-                EventType::SPACE_NEW_ENTITY, // Event type enum
+                EventType{"SPACE_NEW_ENTITY"}, // Event type enum
                 std::make_shared<SPACE_NEW_ENTITY>(std::list<ComponentArgs>{
                     ComponentArgs{ ComponentType{"TRANSFORM"}, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 6.4f, 6.4f } / 2.f, 0.f) },
                     ComponentArgs{ ComponentType{"MOTION"}, std::make_shared<MotionArgs>(obj, glm::vec2{}, glm::vec2{}, 126.f / 2.f, 126.f / 2.f, 1.f) },
@@ -195,7 +195,7 @@ namespace rz::lua::entities
         lua["newBase"] = [&events, &lua](sol::table obj, glm::vec2 pos, glm::u8vec3 col) {
             Event e{
                 UUID64{ 0 },                 // Entity ID. 0 because unneeded
-                EventType::SPACE_NEW_ENTITY, // Event type enum
+                EventType{"SPACE_NEW_ENTITY"}, // Event type enum
                 std::make_shared<SPACE_NEW_ENTITY>(std::list<ComponentArgs>{
                     ComponentArgs{ ComponentType{"TRANSFORM"}, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 25.6f, 25.6f } / 2.f, -3.14159 / 4) },
                     ComponentArgs{ ComponentType{"SHAPE"}, std::make_shared<ShapeArgs>(obj, 4, col) } })
@@ -207,7 +207,7 @@ namespace rz::lua::entities
         lua["newDeposit"] = [&events, &lua](sol::table obj, glm::vec2 pos, glm::u8vec3 col) {
             Event e{
                 UUID64{ 0 },                 // Entity ID. 0 because unneeded
-                EventType::SPACE_NEW_ENTITY, // Event type enum
+                EventType{"SPACE_NEW_ENTITY"}, // Event type enum
                 std::make_shared<SPACE_NEW_ENTITY>(std::list<ComponentArgs>{
                     ComponentArgs{ ComponentType{"TRANSFORM"}, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 12.8f, 12.8f } / 2.f, 0.f) },
                     ComponentArgs{ ComponentType{"SHAPE"}, std::make_shared<ShapeArgs>(obj, 4, col) },
@@ -220,7 +220,7 @@ namespace rz::lua::entities
         lua["newBullet"] = [&events, &lua](sol::table obj, glm::vec2 pos, glm::u8vec3 col, glm::vec2 dir) {
             Event e{
                 UUID64{ 0 },                 // Entity ID. 0 because unneeded
-                EventType::SPACE_NEW_ENTITY, // Event type enum
+                EventType{"SPACE_NEW_ENTITY"}, // Event type enum
                 std::make_shared<SPACE_NEW_ENTITY>(std::list<ComponentArgs>{
                     ComponentArgs{ ComponentType{"TRANSFORM"}, std::make_shared<TransformArgs>(obj, pos, glm::vec2{ 1.6f, 1.6f } / 2.f, 0.f) },
                     ComponentArgs{ ComponentType{"MOTION"}, std::make_shared<MotionArgs>(obj, dir * 512.f, glm::vec2{}, 64.f / 2.f, 64.f / 2.f, 1.f) },

@@ -54,7 +54,7 @@ int main()
 
         if (elapsed >= 10.0)
         {
-            std::cout << "FPS: " << frames / 10 << "\tFrames: " << frames << std::endl;
+            std::cout << "FPS: " << frames / 10 << "\tFrames: " << frames << "\tEntities: " << s.getEntities().size() << std::endl;
             elapsedT += elapsed;
             elapsed = 0.0;
             framesT += frames;

@@ -145,7 +145,7 @@ Task InputSystem::update(EntityMap &, double delta)
 						break;
 					}
 					default:
-					break;
+						break;
 				}
 				break;
 			}
@@ -163,6 +163,8 @@ Task InputSystem::update(EntityMap &, double delta)
 						processMouse("m2", event.mouseButton.x, event.mouseButton.y);
 						break;
 					}
+					default:
+						break;
 				}
 				break;
 			}
@@ -172,7 +174,7 @@ Task InputSystem::update(EntityMap &, double delta)
 				break;
 			}
 			default:
-			break;
+				break;
 		}
 	}
 

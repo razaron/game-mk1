@@ -84,7 +84,7 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
 	};
 
 	_lua["Render"]["draw"]["tilemap"] = [window, texture](std::array<int, 32 * 32> tilemap) {
-		for (int i = 0; i < tilemap.size(); ++i)
+		for (auto i = 0u; i < tilemap.size(); ++i)
 		{
 			int tex = tilemap[i];
 			sf::Sprite tile;
@@ -139,12 +139,12 @@ Task RenderSystem::update(EntityMap &, double delta)
 	return Task{};
 }
 
-ComponentHandle RenderSystem::createComponent(ComponentType type, std::shared_ptr<void>)
+ComponentHandle RenderSystem::createComponent(ComponentType, std::shared_ptr<void>)
 {
 	return {};
 }
 
-bool RenderSystem::removeComponent(ComponentHandle ch)
+bool RenderSystem::removeComponent(ComponentHandle)
 {
 	return false;
 }

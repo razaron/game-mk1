@@ -56,7 +56,7 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
         std::cerr << err.what() << std::endl;
     }
 
-    registerHandler(EVENTTYPE_MODEL, [&](const Event &e) {
+    registerHandler(EventType{"MODEL"}, [&](const Event &e) {
         auto data = std::static_pointer_cast<EVENTDATA_MODEL>(e.data);
 
         _models[e.recipient] = data->model;
@@ -122,9 +122,6 @@ void RenderSystem::render()
         float delta = 2 * 3.14159 / shape.sides;
         for (int i = 0; i < shape.sides; i++)
         {
-            float x = std::cos(theta);
-            float y = std::sin(theta);
-
             glm::vec4 v1{ std::cos(theta), std::sin(theta), 0.f, 1.f };
             glm::vec4 v2{ std::cos(theta + delta), std::sin(theta + delta), 0.f, 1.f };
             glm::vec4 v3{ 0.f, 0.f, 0.f, 1.f };

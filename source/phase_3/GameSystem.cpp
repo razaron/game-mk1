@@ -50,7 +50,7 @@ GameSystem::GameSystem(sol::state_view lua)
 		std::cerr << err.what() << std::endl;
 	}
 
-	registerHandler(EVENTTYPE_COLLISION, [&](const Event &e) {
+	registerHandler(EventType{"COLLISION"}, [&](const Event &e) {
 		auto data = std::static_pointer_cast<EVENTDATA_COLLISION>(e.data);
 
 		_collisions.push_back(std::make_pair(e.recipient, *data));

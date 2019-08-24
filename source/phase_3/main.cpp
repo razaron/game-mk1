@@ -49,7 +49,7 @@ int main()
     g[2].data->setTaskScheduler(ts);
     g[3].data->setTaskScheduler(ts);
 
-    s.registerHandler(EventType::SPACE_NEW_ENTITY, [&s, &lua](const Event &e) {
+    s.registerHandler(EventType{"SPACE_NEW_ENTITY"}, [&s, &lua](const Event &e) {
         auto data = std::static_pointer_cast<SPACE_NEW_ENTITY>(e.data);
 
         auto entity = s.createEntity();
@@ -64,7 +64,7 @@ int main()
         {
             events.push_back(Event{
                 entity.getID(),
-                EventType::SYSTEM_NEW_COMPONENT,
+                EventType{"SYSTEM_NEW_COMPONENT"},
                 std::make_shared<SYSTEM_NEW_COMPONENT>(args) });
         }
 
@@ -97,7 +97,7 @@ int main()
 
         if (elapsed >= 10.0)
         {
-            std::cout << "FPS: " << frames / 10 << "\tFrames: " << frames << std::endl;
+            std::cout << "FPS: " << frames / 10 << "\tFrames: " << frames << "\tEntities: " << s.getEntities().size() << std::endl;
             elapsedT += elapsed;
             elapsed = 0.0;
             framesT += frames;

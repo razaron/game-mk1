@@ -6,10 +6,6 @@
 #include "EventStream.hpp"
 #include "TaskScheduler.hpp"
 
-const rz::eventstream::EventType EVENTTYPE_MODEL = rz::eventstream::EventType::EVENT_1;
-const rz::eventstream::EventType EVENTTYPE_STEERING = rz::eventstream::EventType::EVENT_2;
-const rz::eventstream::EventType EVENTTYPE_COLLISION = rz::eventstream::EventType::EVENT_3;
-
 const unsigned SCREEN_WIDTH = 1024u;
 const unsigned SCREEN_HEIGHT = 1024u;
 

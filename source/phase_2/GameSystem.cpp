@@ -51,7 +51,7 @@ GameSystem::GameSystem(sol::state_view lua)
 	}
 
 
-	registerHandler(EVENTTYPE_COLLISION, [&](const Event &e) {
+	registerHandler(EventType{"COLLISION"}, [&](const Event &e) {
 		auto data = std::static_pointer_cast<EVENTDATA_COLLISION>(e.data);
 
 		_collisions.push_back(std::make_pair(e.recipient, *data));
@@ -94,7 +94,7 @@ ComponentHandle GameSystem::createComponent(ComponentType, std::shared_ptr<void>
 	return {};
 }
 
-bool GameSystem::removeComponent(ComponentHandle ch)
+bool GameSystem::removeComponent(ComponentHandle)
 {
 	return false;
 }
