@@ -24,6 +24,29 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
         // error...
     }
 
+    // EVENT HANDLERS
+    registerHandler(game::event::type::MODEL, [&](const Event &e) {
+        auto data = std::static_pointer_cast<game::event::data::MODEL>(e.data);
+
+        _models[e.recipient] = data->model;
+    });
+
+	registerHandler(game::event::type::TEXT, [this, font](const Event &e){
+		auto data = std::static_pointer_cast<game::event::data::TEXT>(e.data);
+
+        sf::Text text;
+        text.setFont(font);
+        text.setString(data->str);
+        text.setPosition(data->pos.x, data->pos.y);
+        text.setCharacterSize(data->size);
+        text.setFillColor(sf::Color{ data->col.r, data->col.g, data->col.b });
+
+        _text[e.recipient] = text;
+	});
+
+    
+
+    // LUA HOOKS
     _lua["Render"] = sol::new_table();
     _lua["Render"]["draw"] = sol::new_table();
     _lua["Render"]["draw"]["text"] = [window, font](std::string str, glm::vec2 pos, unsigned size, glm::u8vec3 col) {
@@ -33,7 +56,7 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
         text.setString(str);
         text.setPosition(pos.x, pos.y);
         text.setCharacterSize(size);
-        text.setColor(sf::Color{ col.r, col.g, col.b });
+        text.setFillColor(sf::Color{ col.r, col.g, col.b });
 
         window->draw(text);
     };
@@ -56,11 +79,6 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
         std::cerr << err.what() << std::endl;
     }
 
-    registerHandler(EventType{"MODEL"}, [&](const Event &e) {
-        auto data = std::static_pointer_cast<EVENTDATA_MODEL>(e.data);
-
-        _models[e.recipient] = data->model;
-    });
 }
 
 RenderSystem::~RenderSystem()
@@ -69,45 +87,29 @@ RenderSystem::~RenderSystem()
 
 Task RenderSystem::update(EntityMap &entities, double)
 {
+    if(!_models.size() || !_text.size()) return Task{};
+
     _data.clear();
 
     for (auto & [ id, entity ] : entities)
     {
         if (!entity.has(ComponentType{"SHAPE"})) continue;
         if (_models.find(id) == _models.end()) continue;
+        if (_text.find(id) == _text.end()) continue;
 
         auto model = _models[id];
         auto shape = *getObject<ShapeComponent>(entity[ComponentType{"SHAPE"}]);
+        
+        auto text = _text[id];
 
-        _data.push_back(std::make_pair(model, shape));
+        _data.push_back(std::make_tuple(model, shape, text));
     }
+
+    // Cleanup
+    _models.clear();
+    _text.clear();
 
     return Task{};
-}
-
-ComponentHandle RenderSystem::createComponent(ComponentType type, std::shared_ptr<void> tuplePtr)
-{
-    Handle h{};
-
-    if(type == "SHAPE")
-    {
-        ShapeArgs args = *(std::static_pointer_cast<ShapeArgs>(tuplePtr));
-
-        h = emplaceObject<ShapeComponent>(std::get<1>(args), std::get<2>(args));
-
-        sol::table obj = std::get<0>(args);
-        obj["shape"] = getObject<ShapeComponent>(h);
-    }
-
-    return ComponentHandle{ type, h };
-}
-
-bool RenderSystem::removeComponent(ComponentHandle ch)
-{
-    if(ch.first == "SHAPE")
-        removeObject<ShapeComponent>(ch.second);
-    
-    return false;
 }
 
 void RenderSystem::render()
@@ -116,7 +118,8 @@ void RenderSystem::render()
 
     std::vector<sf::Vertex> va;
 
-    for (auto & [ model, shape ] : _data)
+    // Draw the things
+    for (auto & [ model, shape, text ] : _data)
     {
         float theta = .0f;
         float delta = 2 * 3.14159 / shape.sides;
@@ -136,25 +139,34 @@ void RenderSystem::render()
 
             theta += delta;
         }
+
+        _window->draw(text);
     }
 
     if (va.size())
         _window->draw(&va[0], va.size(), sf::Triangles);
-
-    // Run game script
-    try
-    {
-        sol::function func = _lua["renderer"]["update"];
-        func();
-    }
-    catch (const sol::error &err)
-    {
-        std::cerr << err.what() << std::endl;
-        std::cin.get();
-    }
-
+    
     _window->display();
+}
 
-    // Cleanup
-    _models.clear();
+ComponentHandle RenderSystem::createComponent(ComponentType type, std::shared_ptr<void> tuplePtr)
+{
+    Handle h{};
+
+    if(type == "SHAPE")
+    {
+        ShapeArgs args = *(std::static_pointer_cast<ShapeArgs>(tuplePtr));
+
+        h = emplaceObject<ShapeComponent>(std::get<0>(args), std::get<1>(args));
+    }
+
+    return ComponentHandle{ type, h };
+}
+
+bool RenderSystem::removeComponent(ComponentHandle ch)
+{
+    if(ch.first == "SHAPE")
+        removeObject<ShapeComponent>(ch.second);
+    
+    return false;
 }

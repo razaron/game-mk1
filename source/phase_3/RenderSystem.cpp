@@ -33,7 +33,7 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
         text.setString(str);
         text.setPosition(pos.x, pos.y);
         text.setCharacterSize(size);
-        text.setColor(sf::Color{col.r, col.g, col.b});
+        text.setFillColor(sf::Color{col.r, col.g, col.b});
 
         window->draw(text);
     };
@@ -56,8 +56,8 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
         std::cerr << err.what() << std::endl;
     }
 
-    registerHandler(EventType{"MODEL"}, [&](const Event &e) {
-        auto data = std::static_pointer_cast<EVENTDATA_MODEL>(e.data);
+    registerHandler(game::event::type::MODEL, [&](const Event &e) {
+        auto data = std::static_pointer_cast<game::event::data::MODEL>(e.data);
 
         _models[e.recipient] = data->model;
     });

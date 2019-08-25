@@ -7,10 +7,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#pragma warning(push)
-#pragma warning(disable : 4996)
 #include <sol.hpp>
-#pragma warning(pop)
 
 namespace rz::game::systems
 {

@@ -32,7 +32,7 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
 		text.setString(str);
 		text.setPosition(pos.x, pos.y);
 		text.setCharacterSize(size);
-		text.setColor(sf::Color{col.r, col.g, col.b});
+		text.setFillColor(sf::Color{col.r, col.g, col.b});
 
 		window->draw(text);
 	};

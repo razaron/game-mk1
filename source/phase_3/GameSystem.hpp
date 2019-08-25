@@ -19,7 +19,7 @@ namespace rz::game::systems
 
       private:
         sol::state_view _lua;
-        std::vector<std::pair<UUID64, EVENTDATA_COLLISION>> _collisions;
+        std::vector<std::pair<UUID64, game::event::data::COLLISION>> _collisions;
     };
 }
 

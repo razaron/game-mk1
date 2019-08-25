@@ -4,9 +4,12 @@
 #include "LuaHooks.hpp"
 #include "System.hpp"
 #include "config.hpp"
+#include "BaseComponent.hpp"
 
 namespace rz::game::systems
 {
+    using BaseArgs = std::tuple<std::string, int>;
+
     class GameSystem : public rz::core::System
     {
       public:
@@ -19,7 +22,10 @@ namespace rz::game::systems
 
       private:
         sol::state_view _lua;
-        std::vector<std::pair<UUID64, EVENTDATA_COLLISION>> _collisions;
+        std::vector<std::pair<UUID64, rz::game::event::data::COLLISION>> _collisions;
+        std::map<UUID64, glm::vec2, UUID64Cmp> _positions;
+
+        std::map<Team, int> _wins;
     };
 }
 

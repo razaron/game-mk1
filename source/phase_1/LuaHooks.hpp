@@ -3,13 +3,8 @@
 
 #include "Planner.hpp"
 
-#pragma warning(push)
-#pragma warning(disable : 4996)
-
 #include <glm/glm.hpp>
 #include <sol.hpp>
-
-#pragma warning(pop)
 
 namespace rz::lua::planner
 {

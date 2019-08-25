@@ -17,6 +17,15 @@ const int GROUP_YELLOW = 4;
 const int GROUP_BULLET = 5;
 const int GROUP_DEPOSIT = 6;
 
+enum class Team
+{
+    ALL,
+    RED,
+    GREEN,
+    BLUE,
+    YELLOW
+};
+
 enum class SteeringBehaviour
 {
     SEEK,
@@ -26,28 +35,50 @@ enum class SteeringBehaviour
     STOP
 };
 
-struct EVENTDATA_MODEL
+namespace rz::game::event::type
 {
-    glm::mat4 model;
+    const eventstream::EventType MODEL{"MODEL"};
+    const eventstream::EventType STEERING{"STEERING"};
+    const eventstream::EventType COLLISION{"COLLISION"};
+    const eventstream::EventType TEXT{"TEXT"};
+}
 
-    EVENTDATA_MODEL(glm::mat4 model) : model{ model } {}
-};
-
-struct EVENTDATA_STEERING
+namespace rz::game::event::data
 {
-    UUID64 target;
-    SteeringBehaviour behaviour;
 
-    EVENTDATA_STEERING(UUID64 target, SteeringBehaviour behaviour) : target{ target }, behaviour{ behaviour } {}
-};
+    struct MODEL
+    {
+        glm::mat4 model;
 
-struct EVENTDATA_COLLISION
-{
-    UUID64 target;
-    float distance;
-    int group;
+        MODEL(glm::mat4 model) : model{ model } {}
+    };
 
-    EVENTDATA_COLLISION(UUID64 target, float distance, int group) : target{ target }, distance{ distance }, group{ group } {}
-};
+    struct STEERING
+    {
+        UUID64 target;
+        SteeringBehaviour behaviour;
+
+        STEERING(UUID64 target, SteeringBehaviour behaviour) : target{ target }, behaviour{ behaviour } {}
+    };
+
+    struct COLLISION
+    {
+        UUID64 target;
+        float distance;
+        int group;
+
+        COLLISION(UUID64 target, float distance, int group) : target{ target }, distance{ distance }, group{ group } {}
+    };
+
+    struct TEXT
+    {
+        std::string str;
+        glm::vec2 pos;
+        glm::u8vec3 col;
+        unsigned size;
+
+        TEXT(std::string str, glm::vec2 pos, glm::u8vec3 col, unsigned size) : str{ str }, pos{ pos }, col{ col }, size{ size } {}
+    };
+} // namespace rz::game::event::data
 
 #endif //RZ_GAME2_CONFIG_HPP

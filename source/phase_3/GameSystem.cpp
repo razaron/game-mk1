@@ -10,15 +10,15 @@ GameSystem::GameSystem(sol::state_view lua)
 {
 	_interval = 0.01;
 
-	lua.new_usertype<EVENTDATA_COLLISION>("EVENTDATA_COLLISION",
-										  sol::constructors<EVENTDATA_COLLISION(UUID64, float, int)>(),
-										  "target", &EVENTDATA_COLLISION::target,
-										  "distance", &EVENTDATA_COLLISION::distance);
+	lua.new_usertype<game::event::data::COLLISION>("COLLISION",
+										  sol::constructors<game::event::data::COLLISION(UUID64, float, int)>(),
+										  "target", &game::event::data::COLLISION::target,
+										  "distance", &game::event::data::COLLISION::distance);
 
 	lua["getCollisions"] = [&](UUID64 id, int group) {
-		std::vector<EVENTDATA_COLLISION> collisions;
+		std::vector<game::event::data::COLLISION> collisions;
 
-		_collisions.erase(std::remove_if(_collisions.begin(), _collisions.end(), [&collisions, id, group](const std::pair<UUID64, EVENTDATA_COLLISION> &e) {
+		_collisions.erase(std::remove_if(_collisions.begin(), _collisions.end(), [&collisions, id, group](const std::pair<UUID64, game::event::data::COLLISION> &e) {
 							  if (e.first == id && e.second.group == group)
 							  {
 								  collisions.push_back(e.second);
@@ -50,8 +50,8 @@ GameSystem::GameSystem(sol::state_view lua)
 		std::cerr << err.what() << std::endl;
 	}
 
-	registerHandler(EventType{"COLLISION"}, [&](const Event &e) {
-		auto data = std::static_pointer_cast<EVENTDATA_COLLISION>(e.data);
+	registerHandler(game::event::type::COLLISION, [&](const Event &e) {
+		auto data = std::static_pointer_cast<game::event::data::COLLISION>(e.data);
 
 		_collisions.push_back(std::make_pair(e.recipient, *data));
 	});

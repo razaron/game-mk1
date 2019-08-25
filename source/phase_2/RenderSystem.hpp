@@ -7,14 +7,11 @@
 
 #include <SFML/Graphics.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#pragma warning(push)
-#pragma warning(disable : 4996)
 #include <sol.hpp>
-#pragma warning(pop)
 
 namespace rz::game::systems
 {
-    using ShapeArgs = std::tuple<sol::object, int, glm::u8vec3>;
+    using ShapeArgs = std::tuple<int, glm::u8vec3>;
 
     struct Camera
     {
@@ -43,8 +40,9 @@ namespace rz::game::systems
         sol::state_view _lua;
         sf::RenderWindow *_window;
 
-        std::vector<std::pair<glm::mat4, rz::game::components::ShapeComponent>> _data;
+        std::vector<std::tuple<glm::mat4, rz::game::components::ShapeComponent, sf::Text>> _data;
         std::map<UUID64, glm::mat4, UUID64Cmp> _models;
+        std::map<UUID64, sf::Text, UUID64Cmp> _text;
     };
 }
 

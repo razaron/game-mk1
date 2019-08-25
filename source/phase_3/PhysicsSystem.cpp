@@ -36,13 +36,13 @@ PhysicsSystem::PhysicsSystem(sol::state_view lua)
 		_behaviours[recipient] = std::make_pair(behaviour, target);
 	};
 
-	registerHandler(EventType{"STEERING"}, [&](const Event &e) {
-		auto data = std::static_pointer_cast<EVENTDATA_STEERING>(e.data);
+	registerHandler(game::event::type::STEERING, [&](const Event &e) {
+		auto data = std::static_pointer_cast<game::event::data::STEERING>(e.data);
 
 		_behaviours[e.id] = std::make_pair(data->behaviour, data->target);
 	});
 
-	extendHandler(EventType{"SYSTEM_DELETE_COMPONENT"}, [&](const Event &e) {
+	extendHandler(core::event::type::SYSTEM_DELETE_COMPONENT, [&](const Event &e) {
 		_behaviours.erase(e.id);
 	});
 }
@@ -214,8 +214,8 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 				{
 					events.emplace_back(
 						id1,
-						EventType{"COLLISION"},
-						std::make_shared<EVENTDATA_COLLISION>(id2, length, c2->group));
+						game::event::type::COLLISION,
+						std::make_shared<game::event::data::COLLISION>(id2, length, c2->group));
 				}
 			}
 		}
@@ -230,8 +230,8 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 
 			events.emplace_back(
 				id,
-				EventType{"MODEL"},
-				std::make_shared<EVENTDATA_MODEL>(transform->getModel()));
+				game::event::type::MODEL,
+				std::make_shared<game::event::data::MODEL>(transform->getModel()));
 		}
 
 		pushEvents(events, StreamType::OUTGOING);

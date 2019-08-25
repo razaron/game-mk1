@@ -1,6 +1,8 @@
 #include "GameSystem.hpp"
 #include "InputSystem.hpp"
 #include "LuaHooks.hpp"
+#include "LuaCore.hpp"
+#include "LuaFramework.hpp"
 #include "PhysicsSystem.hpp"
 #include "RenderSystem.hpp"
 #include "Space.hpp"
@@ -17,14 +19,11 @@ int main()
 
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Phase 2: C++ Component-System");
 
-    // Create a new Lue state and load libraries
+    // Create a new Lua state and load libraries
     sol::state lua;
     lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table, sol::lib::math, sol::lib::os, sol::lib::debug, sol::lib::string, sol::lib::io);
     rz::lua::maths::hook(lua);
-    rz::lua::planner::hook(lua);
-
-    std::vector<Event> events;
-    rz::lua::entities::hook(lua, events);
+    rz::lua::planner::bind(lua);
 
     // Create a new space
     SystemGraph g;
@@ -39,27 +38,6 @@ int main()
     g[3].data = r;
 
     Space s{ g };
-    s.registerHandler(EventType{"SPACE_NEW_ENTITY"}, [&s, &lua](const Event &e) {
-        auto data = std::static_pointer_cast<SPACE_NEW_ENTITY>(e.data);
-
-        auto entity = s.createEntity();
-
-        // Adds uuid to lua object (e.g. Agent)
-        TransformArgs args = *(std::static_pointer_cast<TransformArgs>(data->components.begin()->second));
-        sol::table obj = std::get<0>(args);
-        obj["uuid"] = entity.getID();
-
-        std::vector<Event> events;
-        for (auto args : data->components)
-        {
-            events.push_back(Event{
-                entity.getID(),
-                EventType{"SYSTEM_NEW_COMPONENT"},
-                std::make_shared<SYSTEM_NEW_COMPONENT>(args) });
-        }
-
-        s.pushEvents(events, StreamType::OUTGOING);
-    });
 
     double delta{};
     double elapsed{};
@@ -70,9 +48,6 @@ int main()
     while (window.isOpen())
     {
         auto start = std::chrono::high_resolution_clock::now();
-
-        s.pushEvents(events, StreamType::INCOMING);
-        events.clear();
 
         s.update(delta);
 
