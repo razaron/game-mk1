@@ -6,8 +6,29 @@ game = {}
 
 function game.init()
     -- BASES
-    newBase("RED", glm.vec2.new(128, 128), glm.u8vec3.new(255, 100, 100))
-    newBase("GREEN", glm.vec2.new(896, 128), glm.u8vec3.new(100, 255, 100))
-    newBase("BLUE", glm.vec2.new(896, 896), glm.u8vec3.new(100, 100, 255))
-    newBase("YELLOW", glm.vec2.new(128, 896), glm.u8vec3.new(255, 255, 100))
+    newBase(TEAM.RED, glm.vec2.new(128, 128), glm.u8vec3.new(255, 0, 0))
+    newBase(TEAM.GREEN, glm.vec2.new(896, 128), glm.u8vec3.new(0, 255, 0))
+    newBase(TEAM.BLUE, glm.vec2.new(896, 896), glm.u8vec3.new(0, 0, 255))
+    newBase(TEAM.YELLOW, glm.vec2.new(128, 896), glm.u8vec3.new(255, 255, 0))
+	
+	for y=128,768, 64 do
+		--newAttacker(glm.vec2.new(512, y), 3, glm.u8vec3.new(255, 255, 255), TEAM.RED)
+	end
+	
+	-- DEPOSITS
+    newDeposit(TEAM.RED, glm.vec2.new(192, 192), glm.u8vec3.new(255, 0, 0))
+    newDeposit(TEAM.GREEN, glm.vec2.new(832, 192), glm.u8vec3.new(0, 255, 0))
+    newDeposit(TEAM.BLUE, glm.vec2.new(832, 832), glm.u8vec3.new(0, 0, 255))
+    newDeposit(TEAM.YELLOW, glm.vec2.new(192, 832), glm.u8vec3.new(255, 255, 0))
+
+    local start = 256
+    local span = 512
+    local size = 2
+    for i = 0, size, 1 do
+        for j = 0, size, 1 do
+            local x = start + i * span / size
+            local y = start + j * span / size 
+            newDeposit(TEAM.NONE, glm.vec2.new(x, y), glm.u8vec3.new(100, 100, 100))
+        end
+    end
 end

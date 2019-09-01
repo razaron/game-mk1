@@ -13,8 +13,8 @@ IF(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
 ELSEIF(${CMAKE_GENERATOR} STREQUAL "Visual Studio 15 2017 Win64" OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 16 2019")
     MESSAGE(STATUS "Adding Win64 compile flags")
     LINK_DIRECTORIES (${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/libs/Win64/${CONFIGURATION})
-    SET(MY_COMPILE_FLAGS "/std:c++17 /W3" CACHE STRING "Build option. 32 or 64")
-    SET(MY_LINKER_FLAGS "/std:c++17 /W3" CACHE STRING "Build option. 32 or 64")
+    SET(MY_COMPILE_FLAGS "/std:c++17 /W3 /bigobj" CACHE STRING "Build option. 32 or 64")
+    SET(MY_LINKER_FLAGS "/std:c++17 /W3 /bigobj" CACHE STRING "Build option. 32 or 64")
 ENDIF()
 
 # For -lpthread

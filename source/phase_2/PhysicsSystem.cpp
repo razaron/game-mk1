@@ -40,12 +40,12 @@ PhysicsSystem::PhysicsSystem(sol::state_view lua)
 	registerHandler(game::event::type::STEERING, [&](const Event &e) {
 		auto data = std::static_pointer_cast<game::event::data::STEERING>(e.data);
 
-		_behaviours[e.id] = std::make_pair(data->behaviour, data->target);
+		_behaviours[e.recipient] = std::make_pair(data->behaviour, data->target);
 		}
 	);
 
 	extendHandler(core::event::type::SYSTEM_DELETE_COMPONENT, [&](const Event &e) {
-		_behaviours.erase(e.id);
+		_behaviours.erase(e.recipient);
 		}
 	);
 }
@@ -208,6 +208,8 @@ Task PhysicsSystem::update(EntityMap &entities, double delta)
 	{
 		for (auto &[id2, t2, c2] : colliders)
 		{
+            if (id1 == id2) continue;
+			
 			float length = glm::length(t2->translation - t1->translation);
 			if (length < c1->radius)
 			{

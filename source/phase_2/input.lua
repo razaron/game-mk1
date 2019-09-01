@@ -61,6 +61,7 @@ function input.init()
     ]]--
     input.handlers["m1"] = function(x, y)
         print(tostring(x)..", "..tostring(y))
+		newBullet(glm.vec2.new(x,y), glm.u8vec3.new(100, 100, 100), glm.vec2.new(1,0), UUID64.new(), TEAM.NONE)
     end
 
     input.handlers["m2"] = function(x, y)

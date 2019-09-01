@@ -24,6 +24,7 @@ int main()
     lua.open_libraries(sol::lib::base, sol::lib::package, sol::lib::table, sol::lib::math, sol::lib::os, sol::lib::debug, sol::lib::string, sol::lib::io);
     rz::lua::maths::hook(lua);
     rz::lua::planner::bind(lua);
+    rz::lua::misc::bind(lua);
 
     // Create a new space
     SystemGraph g;
@@ -72,8 +73,8 @@ int main()
 
     std::cout << "Average FPS:" << framesT / elapsedT << std::endl;
 
-    std::cout << "Press enter to continue." << std::endl;
-    std::cin.get();
+    // std::cout << "Press enter to continue." << std::endl;
+    // std::cin.get();
 
     return 0;
 }

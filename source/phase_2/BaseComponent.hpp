@@ -2,20 +2,21 @@
 #define RZ_GAME2_BASECOMPONENT_HPP
 
 #include "Component.hpp"
+#include "config.hpp"
 
 namespace rz::game::components
 {
     class BaseComponent : public rz::core::Component
     {
       public:
-        BaseComponent(std::string team, int metal) : team{ team }, metal{ metal } {}
+        BaseComponent(Team team, int metal) : team{ team }, metal{ metal } {}
         BaseComponent() {}
         ~BaseComponent() {}
 
-        std::string team;
+        Team team{Team::NONE};
         int metal;
-        int resuppling;
+        int serving;
     };
 } // namespace rz::game::components
 
-#endif //RZ_GAME2_COLLIDERCOMPONENT_HPP
+#endif //RZ_GAME2_BASECOMPONENT_HPP

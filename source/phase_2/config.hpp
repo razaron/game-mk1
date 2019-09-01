@@ -9,21 +9,21 @@
 const unsigned SCREEN_WIDTH = 1024u;
 const unsigned SCREEN_HEIGHT = 1024u;
 
-const int GROUP_ALL = 0;
-const int GROUP_RED = 1;
-const int GROUP_GREEN = 2;
-const int GROUP_BLUE = 3;
-const int GROUP_YELLOW = 4;
+const int GROUP_RED = 0;
+const int GROUP_GREEN = 1;
+const int GROUP_BLUE = 2;
+const int GROUP_YELLOW = 3;
+const int GROUP_ALL = 4;
 const int GROUP_BULLET = 5;
 const int GROUP_DEPOSIT = 6;
 
 enum class Team
 {
-    ALL,
-    RED,
-    GREEN,
-    BLUE,
-    YELLOW
+    RED = 0,
+    GREEN = 1,
+    BLUE = 2,
+    YELLOW = 3,
+    NONE
 };
 
 enum class SteeringBehaviour
@@ -37,15 +37,15 @@ enum class SteeringBehaviour
 
 namespace rz::game::event::type
 {
-    const eventstream::EventType MODEL{"MODEL"};
-    const eventstream::EventType STEERING{"STEERING"};
-    const eventstream::EventType COLLISION{"COLLISION"};
-    const eventstream::EventType TEXT{"TEXT"};
-}
+    const eventstream::EventType MODEL{ "MODEL" };
+    const eventstream::EventType STEERING{ "STEERING" };
+    const eventstream::EventType COLLISION{ "COLLISION" };
+    const eventstream::EventType TEXT{ "TEXT" };
+    const eventstream::EventType COLOUR{ "COLOUR" };
+} // namespace rz::game::event::type
 
 namespace rz::game::event::data
 {
-
     struct MODEL
     {
         glm::mat4 model;
@@ -68,6 +68,7 @@ namespace rz::game::event::data
         int group;
 
         COLLISION(UUID64 target, float distance, int group) : target{ target }, distance{ distance }, group{ group } {}
+        COLLISION() {}
     };
 
     struct TEXT
@@ -78,6 +79,13 @@ namespace rz::game::event::data
         unsigned size;
 
         TEXT(std::string str, glm::vec2 pos, glm::u8vec3 col, unsigned size) : str{ str }, pos{ pos }, col{ col }, size{ size } {}
+    };
+
+    struct COLOUR
+    {
+        glm::u8vec3 colour;
+
+        COLOUR(glm::u8vec3 colour) : colour{ colour } {}
     };
 } // namespace rz::game::event::data
 

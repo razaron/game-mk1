@@ -43,6 +43,7 @@ namespace rz::game::systems
         std::vector<std::tuple<glm::mat4, rz::game::components::ShapeComponent, sf::Text>> _data;
         std::map<UUID64, glm::mat4, UUID64Cmp> _models;
         std::map<UUID64, sf::Text, UUID64Cmp> _text;
+        std::vector<std::pair<UUID64, glm::u8vec3>> _colours;
     };
 }
 
