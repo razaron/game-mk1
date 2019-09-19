@@ -110,7 +110,7 @@ GameSystem::GameSystem(sol::state_view lua)
                 ComponentArgs{ ComponentType{ "MOTION" }, std::make_shared<MotionArgs>(glm::vec2{}, glm::vec2{}, 64.f, 64.f, 1.f) },
                 ComponentArgs{ ComponentType{ "SHAPE" }, std::make_shared<ShapeArgs>(sides, col) },
                 ComponentArgs{ ComponentType{ "COLLIDER" }, std::make_shared<ColliderArgs>(128.f, static_cast<int>(team)) },
-                ComponentArgs{ ComponentType{ "AGENT" }, std::make_shared<AgentArgs>(team, actions) },
+                ComponentArgs{ ComponentType{ "AGENT" }, std::make_shared<AgentArgs>("WORKER", team, actions) },
                 ComponentArgs{ ComponentType{ "WORKER" }, {} } })
         };
 
@@ -202,8 +202,8 @@ GameSystem::GameSystem(sol::state_view lua)
         if (a->target != Entity{})
         {
             auto d = getObject<DepositComponent>(a->target[ComponentType{ "DEPOSIT" }]);
-			d->serving++;
-		}
+            d->serving++;
+        }
 
         return true;
     };
@@ -338,7 +338,69 @@ GameSystem::GameSystem(sol::state_view lua)
                 ComponentArgs{ ComponentType{ "MOTION" }, std::make_shared<MotionArgs>(glm::vec2{}, glm::vec2{}, 64.f, 64.f, 1.f) },
                 ComponentArgs{ ComponentType{ "SHAPE" }, std::make_shared<ShapeArgs>(sides, col) },
                 ComponentArgs{ ComponentType{ "COLLIDER" }, std::make_shared<ColliderArgs>(128.f, static_cast<unsigned>(team)) },
-                ComponentArgs{ ComponentType{ "AGENT" }, std::make_shared<AgentArgs>(team, actions) },
+                ComponentArgs{ ComponentType{ "AGENT" }, std::make_shared<AgentArgs>("ATTACKER", team, actions) },
+                ComponentArgs{ ComponentType{ "SOLDIER" }, {} } })
+        };
+
+        _eventStream.pushEvent(e, StreamType::OUTGOING);
+    };
+
+    lua["newDefender"] = [this](glm::vec2 pos, int sides, glm::u8vec3 col, Team team) {
+        // TODO ProceduralCondition need to be able to take arguments. In this case, EntityMap and Entity
+        Action findTarget{
+            "findTarget",
+            1,
+            {},
+            {},
+            {},
+            ProceduralConditionSet{ []() { return Condition{ "target", "isAvailable", true, Operation::ASSIGN }; } }
+        };
+
+        Action getInRange{
+            "getInRange",
+            1,
+            ConditionSet{ Condition{ "target", "isAvailable", true, Operation::EQUAL } },
+            ConditionSet{ Condition{ "target", "isInRange", true, Operation::ASSIGN } }
+        };
+
+        Action shoot{
+            "shoot",
+            1,
+            ConditionSet{
+                Condition{ "target", "isInRange", true, Operation::EQUAL },
+                Condition{ "self", "ammo", 0, Operation::GREATER } },
+            ConditionSet{
+                Condition{ "target", "isDead", true, Operation::ASSIGN },
+                Condition{ "self", "threat", 1, Operation::MINUS } }
+        };
+
+        Action melee{
+            "melee",
+            2,
+            ConditionSet{ Condition{ "target", "isInRange", true, Operation::EQUAL } },
+            ConditionSet{
+                Condition{ "target", "isDead", true, Operation::ASSIGN },
+                Condition{ "self", "threat", 1, Operation::MINUS } }
+        };
+
+        Action patrol{
+            "patrol",
+            1,
+            ConditionSet{},
+            ConditionSet{ Condition{ "self", "isPatrolling", true, Operation::ASSIGN } }
+        };
+
+        ActionSet actions{ findTarget, getInRange, shoot, melee, patrol };
+
+        Event e{
+            UUID64{ 0 },                         // Entity ID. 0 because unneeded
+            core::event::type::SPACE_NEW_ENTITY, // Event type enum
+            std::make_shared<core::event::data::SPACE_NEW_ENTITY>(std::list<ComponentArgs>{
+                ComponentArgs{ ComponentType{ "TRANSFORM" }, std::make_shared<TransformArgs>(pos, glm::vec2{ 3.2f }, 0.f) },
+                ComponentArgs{ ComponentType{ "MOTION" }, std::make_shared<MotionArgs>(glm::vec2{}, glm::vec2{}, 64.f, 64.f, 1.f) },
+                ComponentArgs{ ComponentType{ "SHAPE" }, std::make_shared<ShapeArgs>(sides, col) },
+                ComponentArgs{ ComponentType{ "COLLIDER" }, std::make_shared<ColliderArgs>(128.f, static_cast<unsigned>(team)) },
+                ComponentArgs{ ComponentType{ "AGENT" }, std::make_shared<AgentArgs>("DEFENDER", team, actions) },
                 ComponentArgs{ ComponentType{ "SOLDIER" }, {} } })
         };
 
@@ -483,8 +545,7 @@ GameSystem::GameSystem(sol::state_view lua)
         }
         else if (s->elapsed > 1.0 && distance < 16)
         {
-            sol::function func = _lua["deleteEntity"];
-            func(a->target.getID());
+            killAgent(a->target);
 
             s->elapsed = 0;
             a->target = Entity{};
@@ -618,6 +679,45 @@ GameSystem::GameSystem(sol::state_view lua)
         return true;
     };
 
+    EffectFunction patrolTarget = [&](const EntityMap &entities, const Entity &self) {
+        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
+        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
+
+        std::vector<Entity> deposits;
+        for (auto &[id, entity] : entities)
+        {
+            if (entity.has(ComponentType{ "DEPOSIT" }))
+            {
+                auto d = getObject<DepositComponent>(entity[ComponentType{ "DEPOSIT" }]);
+                if (d->team == a->team)
+                    deposits.push_back(entity);
+            }
+        }
+
+        if (!deposits.size())
+            return false;
+
+        std::vector<Entity> target;
+
+        std::sample(deposits.begin(), deposits.end(), std::back_inserter(target), 1, std::mt19937{ std::random_device{}() });
+
+        a->target = target[0];
+
+        return true;
+    };
+
+    EffectFunction patrolEffect = [&](const EntityMap &entities, const Entity &self) {
+        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
+        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
+
+        auto depo = getObject<DepositComponent>(a->target[ComponentType{"DEPOSIT"}]);
+
+        if (a->blackboard.threat || s->ammo < 3 || glm::distance(_positions[a->target.getID()], _positions[self.getID()]) < 2)
+            return true;
+        else
+            return false;
+    };
+
     _effects["findTarget"] = std::make_tuple(findTargetTarget, SteeringBehaviour::STOP, findTargetEffect);
     _effects["getInRange"] = std::make_tuple(getInRangeTarget, SteeringBehaviour::SEEK, getInRangeEffect);
     _effects["shoot"] = std::make_tuple(shootTarget, SteeringBehaviour::MAINTAIN, shootEffect);
@@ -625,6 +725,7 @@ GameSystem::GameSystem(sol::state_view lua)
     _effects["resupply"] = std::make_tuple(resupplyTarget, SteeringBehaviour::ARRIVE, resupplyEffect);
     _effects["scout"] = std::make_tuple(scoutTarget, SteeringBehaviour::WANDER, scoutEffect);
     _effects["capture"] = std::make_tuple(captureTarget, SteeringBehaviour::ARRIVE, captureEffect);
+    _effects["patrol"] = std::make_tuple(patrolTarget, SteeringBehaviour::ARRIVE, patrolEffect);
 
     lua["deleteEntity"] = [&](const UUID64 &id) {
         Event e{
@@ -669,10 +770,23 @@ GameSystem::~GameSystem()
 Task GameSystem::update(EntityMap &entities, double delta)
 {
     static double elapsed{ 0.0 };
+    static double gameTime{ 0.0 };
+    gameTime += delta;
+
     if ((elapsed += delta) < _interval)
         return {};
     else
         elapsed -= _interval;
+
+    if (!entities.size() && gameTime > 1.0)
+    {
+        sol::function func = _lua["game"]["init"];
+        func();
+
+        gameTime = 0;
+    }
+
+    _entities = entities;
 
     std::vector<Event> events;
 
@@ -700,7 +814,8 @@ Task GameSystem::update(EntityMap &entities, double delta)
         auto b = getObject<BaseComponent>(base[ComponentType{ "BASE" }]);
 
         std::vector<Entity> workers;
-        std::vector<Entity> soldiers;
+        std::vector<Entity> attackers;
+        std::vector<Entity> defenders;
         for (auto &agent : agents)
         {
             auto a = getObject<AgentComponent>(agent[ComponentType{ "AGENT" }]);
@@ -710,7 +825,12 @@ Task GameSystem::update(EntityMap &entities, double delta)
             if (agent.has(ComponentType{ "WORKER" }))
                 workers.push_back(agent);
             else if (agent.has(ComponentType{ "SOLDIER" }))
-                soldiers.push_back(agent);
+            {
+                if(a->actions.size() == 7)
+                    attackers.push_back(agent);
+                else if(a->actions.size() == 5)
+                    defenders.push_back(agent);
+            }
         }
 
         glm::u8vec3 col{ 50, 50, 50 };
@@ -723,20 +843,26 @@ Task GameSystem::update(EntityMap &entities, double delta)
         else if (b->team == Team::YELLOW)
             col = { 255, 255, 0 };
 
-        // build worker
+        // build stuff
         if (b->metal >= 5)
         {
-            if (workers.size() <= soldiers.size())
+            if (workers.size() <= attackers.size())
             {
                 b->metal -= 2;
                 sol::function build = _lua["newWorker"];
                 build(_positions[base.getID()], 16, col, static_cast<unsigned>(b->team));
             }
-            else
+            else if(attackers.size() <= defenders.size())
             {
                 b->metal -= 5;
                 sol::function build = _lua["newAttacker"];
                 build(_positions[base.getID()], 3, col, static_cast<unsigned>(b->team));
+            }
+            else
+            {
+                b->metal -= 5;
+                sol::function build = _lua["newDefender"];
+                build(_positions[base.getID()], 4, col, static_cast<unsigned>(b->team));
             }
         }
 
@@ -1007,14 +1133,26 @@ Task GameSystem::update(EntityMap &entities, double delta)
                     { "world", "hasDeposit", hasDeposit }
                 };
 
-                if (a->blackboard.threat)
-                    goal = Action{ "GOAL", 0, ConditionSet{ { "self", "threat", a->blackboard.threat, Operation::LESS } }, {} };
-                else if (s->ammo < 3 && hasAmmo)
-                    goal = Action{ "GOAL", 0, ConditionSet{ { "self", "ammo", s->ammo, Operation::GREATER } }, {} };
-                else if (hasDeposit)
-                    goal = Action{ "GOAL", 0, ConditionSet{ { "team", "hasDeposit", true, Operation::EQUAL } }, {} };
-                else
-                    goal = Action{ "GOAL", 0, ConditionSet{ { "self", "isScouting", true, Operation::EQUAL } }, {} };
+                if(a->name == "ATTACKER")
+                {
+                    if (a->blackboard.threat)
+                        goal = Action{ "GOAL", 0, ConditionSet{ { "self", "threat", a->blackboard.threat, Operation::LESS } }, {} };
+                    else if (s->ammo < 3 && hasAmmo)
+                        goal = Action{ "GOAL", 0, ConditionSet{ { "self", "ammo", s->ammo, Operation::GREATER } }, {} };
+                    else if (hasDeposit)
+                        goal = Action{ "GOAL", 0, ConditionSet{ { "team", "hasDeposit", true, Operation::EQUAL } }, {} };
+                    else
+                        goal = Action{ "GOAL", 0, ConditionSet{ { "self", "isScouting", true, Operation::EQUAL } }, {} };
+                }
+                else if(a->name == "DEFENDER")
+                {
+                    if (a->blackboard.threat)
+                        goal = Action{ "GOAL", 0, ConditionSet{ { "self", "threat", a->blackboard.threat, Operation::LESS } }, {} };
+                    else if (s->ammo < 3 && hasAmmo)
+                        goal = Action{ "GOAL", 0, ConditionSet{ { "self", "ammo", s->ammo, Operation::GREATER } }, {} };
+                    else
+                        goal = Action{ "GOAL", 0, ConditionSet{ { "self", "isPatrolling", true, Operation::EQUAL } }, {} };
+                }
             }
 
             a->planner.setWorldState(worldState);
@@ -1026,6 +1164,7 @@ Task GameSystem::update(EntityMap &entities, double delta)
                 {
                     a->curAction = {};
                     a->curPlan = {};
+                    a->planner.savePlan(std::to_string(agent.getID().uuid) + ".dot");
                 }
                 else
                 {
@@ -1080,6 +1219,7 @@ Task GameSystem::update(EntityMap &entities, double delta)
 
             sol::function func = _lua["deleteEntity"];
             func(bullet.getID());
+
             continue;
         }
 
@@ -1092,7 +1232,7 @@ Task GameSystem::update(EntityMap &entities, double delta)
 
             for (auto &collision : collisions)
             {
-                if (collision.group != static_cast<int>(b->team) && collision.group != GROUP_DEPOSIT && collision.group != GROUP_BULLET)
+                if (!b->isDead && collision.group != static_cast<int>(b->team) && collision.group != GROUP_DEPOSIT && collision.group != GROUP_BULLET)
                 {
                     uuid = collision.target;
                     dist = collision.distance;
@@ -1101,15 +1241,167 @@ Task GameSystem::update(EntityMap &entities, double delta)
 
             if (dist != std::numeric_limits<int>::max())
             {
+                killAgent(entities[uuid]);
+
                 sol::function func = _lua["deleteEntity"];
-                func(uuid);
+                func(bullet.getID());
+
+                b->isDead = true;
             }
         }
     }
 
+    // GUI TEXT HACKS (hack because uuid)
+    std::vector<Entity> red;
+    std::vector<Entity> green;
+    std::vector<Entity> blue;
+    std::vector<Entity> yellow;
+
+    for (auto &[id, entity] : entities)
+    {
+        if (entity.has(ComponentType{ "AGENT" }))
+        {
+            auto a = getObject<AgentComponent>(entity[ComponentType{ "AGENT" }]);
+
+            if (a->isDead)
+                continue;
+            else if (a->team == Team::RED)
+                red.push_back(entity);
+            else if (a->team == Team::GREEN)
+                green.push_back(entity);
+            else if (a->team == Team::BLUE)
+                blue.push_back(entity);
+            else if (a->team == Team::YELLOW)
+                yellow.push_back(entity);
+        }
+    }
+
+    std::stringstream str;
+    str << _wins[Team::RED] << "\t\t\t\t\t\t\t\t" << red.size();
+
+    events.emplace_back(
+        UUID64{ 0 },
+        game::event::type::TEXT,
+        std::make_shared<game::event::data::TEXT>(std::string{str.str()}, glm::vec2{ 0, 0 }, glm::u8vec3{ 255, 0, 0 }, 30));
+
+    str = std::stringstream{};
+    str << _wins[Team::GREEN] << "\t\t\t\t\t\t\t\t" << green.size();
+
+    events.emplace_back(
+        UUID64{ 1 },
+        game::event::type::TEXT,
+        std::make_shared<game::event::data::TEXT>(std::string{str.str()}, glm::vec2{ 0, 32 }, glm::u8vec3{ 0, 255, 0 }, 30));
+
+    str = std::stringstream{};
+    str << _wins[Team::BLUE] << "\t\t\t\t\t\t\t\t" << blue.size();
+
+    events.emplace_back(
+        UUID64{ 2 },
+        game::event::type::TEXT,
+        std::make_shared<game::event::data::TEXT>(std::string{str.str()}, glm::vec2{ 0, 64 }, glm::u8vec3{ 0, 0, 255 }, 30));
+
+    str = std::stringstream{};
+    str << _wins[Team::YELLOW] << "\t\t\t\t\t\t\t\t" << yellow.size();
+
+    events.emplace_back(
+        UUID64{ 3 },
+        game::event::type::TEXT,
+        std::make_shared<game::event::data::TEXT>(std::string{str.str()}, glm::vec2{ 0, 96 }, glm::u8vec3{ 255, 255, 0 }, 30));
+
     pushEvents(events, StreamType::OUTGOING);
 
     return Task{};
+}
+
+void GameSystem::killAgent(const Entity &entity)
+{
+    sol::function func = _lua["deleteEntity"];
+    func(entity.getID());
+
+    auto a = getObject<AgentComponent>(entity[ComponentType{ "AGENT" }]);
+    a->isDead = true;
+
+    if (checkGameOver())
+    {
+        std::vector<Event> events;
+        for (auto &[id, entity] : _entities)
+        {
+            events.emplace_back(
+                id,
+                core::event::type::SPACE_DELETE_ENTITY,
+                std::make_shared<core::event::data::SPACE_DELETE_ENTITY>());
+        }
+
+        for (auto &[id, entity] : _entities)
+        {
+            if (entity.has(ComponentType{ "AGENT" }))
+            {
+                auto a = getObject<AgentComponent>(entity[ComponentType{ "AGENT" }]);
+
+                a->isDead = true;
+            }
+
+            if (entity.has(ComponentType{ "BULLET" }))
+            {
+                auto b = getObject<BulletComponent>(entity[ComponentType{ "BULLET" }]);
+
+                b->isDead = true;
+            }
+        }
+
+        pushEvents(events, StreamType::OUTGOING);
+    }
+}
+
+bool GameSystem::checkGameOver()
+{
+    std::vector<Entity> red;
+    std::vector<Entity> green;
+    std::vector<Entity> blue;
+    std::vector<Entity> yellow;
+
+    for (auto &[id, entity] : _entities)
+    {
+        if (entity.has(ComponentType{ "AGENT" }))
+        {
+            auto a = getObject<AgentComponent>(entity[ComponentType{ "AGENT" }]);
+
+            if (a->isDead || a->name == "DEFENDER")
+                continue;
+            else if (a->team == Team::RED)
+                red.push_back(entity);
+            else if (a->team == Team::GREEN)
+                green.push_back(entity);
+            else if (a->team == Team::BLUE)
+                blue.push_back(entity);
+            else if (a->team == Team::YELLOW)
+                yellow.push_back(entity);
+        }
+    }
+
+    bool isGameOver{ false };
+    if (red.size() && !green.size() && !blue.size() && !yellow.size())
+    {
+        _wins[Team::RED]++;
+        isGameOver = true;
+    }
+    else if (!red.size() && green.size() && !blue.size() && !yellow.size())
+    {
+        _wins[Team::GREEN]++;
+        isGameOver = true;
+    }
+    else if (!red.size() && !green.size() && blue.size() && !yellow.size())
+    {
+        _wins[Team::BLUE]++;
+        isGameOver = true;
+    }
+    else if (!red.size() && !green.size() && !blue.size() && yellow.size())
+    {
+        _wins[Team::YELLOW]++;
+        isGameOver = true;
+    }
+
+    return isGameOver;
 }
 
 ComponentHandle GameSystem::createComponent(ComponentType type, std::shared_ptr<void> tuplePtr)
@@ -1132,7 +1424,7 @@ ComponentHandle GameSystem::createComponent(ComponentType type, std::shared_ptr<
     {
         AgentArgs args = *(std::static_pointer_cast<AgentArgs>(tuplePtr));
 
-        h = emplaceObject<AgentComponent>(std::get<0>(args), std::get<1>(args));
+        h = emplaceObject<AgentComponent>(std::get<0>(args), std::get<1>(args), std::get<2>(args));
     }
     else if (type == "WORKER")
     {

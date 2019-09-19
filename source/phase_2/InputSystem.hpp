@@ -24,8 +24,8 @@ namespace rz::game::systems
         sf::RenderWindow *_window;
 
         const double _pollingRate;
-        double _elapsedKeyboard;
-        double _elapsedMouse;
+        double _elapsedKeyboard{};
+        double _elapsedMouse{};
     };
 }
 

@@ -14,8 +14,8 @@ namespace rz::game::components
         ShapeComponent(int sides, glm::u8vec3 colour);
         ~ShapeComponent();
 
-        int sides;
-        glm::u8vec3 colour;
+        int sides{};
+        glm::u8vec3 colour{};
     };
 }
 

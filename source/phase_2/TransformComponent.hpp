@@ -16,14 +16,14 @@ namespace rz::game::components
         ~TransformComponent();
 
         glm::mat4 getModel();
-
-        glm::vec2 translation;
-        glm::vec2 scale;
         float getRotation() { return _rotation; }
         float setRotation(float rotation);
 
+        glm::vec2 translation{};
+        glm::vec2 scale{};
+
       private:
-        float _rotation; // in radians
+        float _rotation{}; // in radians
     };
 }
 

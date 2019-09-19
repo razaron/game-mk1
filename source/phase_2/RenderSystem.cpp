@@ -55,6 +55,11 @@ RenderSystem::RenderSystem(sol::state_view lua, sf::RenderWindow *window)
         _text.erase(e.recipient);
     });
 
+    registerHandler(core::event::type::SPACE_REMOVE_ENTITY, [&](const Event &e) {
+        _models.erase(e.recipient);
+        _text.erase(e.recipient);
+    });
+
     // LUA HOOKS
     _lua["Render"] = sol::new_table();
     _lua["Render"]["draw"] = sol::new_table();

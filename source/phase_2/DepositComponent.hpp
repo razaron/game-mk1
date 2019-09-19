@@ -14,10 +14,10 @@ namespace rz::game::components
         ~DepositComponent() {}
 
         Team team{Team::NONE};
-        int metal;
-        double elapsed;
-        std::array<float, 4> control;
-        int serving;
+        int metal{};
+        double elapsed{};
+        std::array<float, 4> control{};
+        int serving{};
     };
 } // namespace rz::game::components
 

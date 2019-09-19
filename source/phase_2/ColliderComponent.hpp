@@ -14,8 +14,8 @@ namespace rz::game::components
 		ColliderComponent() {}
 		~ColliderComponent() {}
 
-		float radius;
-		int group;
+		float radius{};
+		int group{};
 	};
 }
 

@@ -15,22 +15,23 @@ namespace rz::game::components
         };
 
       public:
-        AgentComponent(Team team, rz::planner::ActionSet actions) : team{team}, actions{ actions } {}
+        AgentComponent(std::string name, Team team, rz::planner::ActionSet actions) : name{name}, team{team}, actions{ actions } {}
         AgentComponent() {}
         ~AgentComponent() {}
 
-        Team team;
+        std::string name{"AGENT"};
+        Team team{};
 
-        rz::planner::Planner planner;
+        rz::planner::Planner planner{};
         rz::planner::ActionSet actions;
 
         rz::planner::ActionSet curPlan;
-        rz::planner::Action curAction;
+        rz::planner::Action curAction{};
 
-        rz::core::Entity target;
+        rz::core::Entity target{};
 
-        bool isDead;
-        Blackboard blackboard;
+        bool isDead{false};
+        Blackboard blackboard{};
     };
 } // namespace rz::game::components
 

@@ -14,8 +14,8 @@ namespace rz::game::components
         ~BaseComponent() {}
 
         Team team{Team::NONE};
-        int metal;
-        int serving;
+        int metal{5};
+        int serving{};
     };
 } // namespace rz::game::components
 

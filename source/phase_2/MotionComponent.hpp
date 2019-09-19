@@ -14,8 +14,8 @@ namespace rz::game::components
         MotionComponent(glm::vec2 velocity, glm::vec2 acceleration, float maxVelocity, float maxAcceleration, float mass);
         ~MotionComponent();
 
-        glm::vec2 velocity, acceleration;
-        float maxVelocity, maxAcceleration, mass, wanderAngle;
+        glm::vec2 velocity{}, acceleration{};
+        float maxVelocity{}, maxAcceleration{}, mass{}, wanderAngle{};
     };
 }
 

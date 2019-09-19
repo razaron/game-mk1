@@ -12,9 +12,10 @@ namespace rz::game::components
         BulletComponent() {}
         ~BulletComponent() {}
 
-        UUID64 ownerID;
-        Team team;
-        glm::vec2 origin;
+        UUID64 ownerID{0};
+        Team team{Team::NONE};
+        glm::vec2 origin{};
+        bool isDead{false};
    };
 } // namespace rz::game::components
 

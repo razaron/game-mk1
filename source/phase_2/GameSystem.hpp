@@ -17,13 +17,15 @@ namespace rz::game::systems
     using BaseArgs = std::tuple<Team, int>;
     using DepositArgs = std::tuple<Team, int>;
     using DepositArgs = std::tuple<Team, int>;
-    using AgentArgs = std::tuple<Team, rz::planner::ActionSet>;
+    using AgentArgs = std::tuple<std::string, Team, rz::planner::ActionSet>;
     using WorkerArgs = std::tuple<>;
     using SoldierArgs = std::tuple<>;
     using BulletArgs = std::tuple<UUID64, Team, glm::vec2>;
 
     class GameSystem : public rz::core::System
     {
+      using EffectFunction = std::function<bool(const rz::core::EntityMap &, const rz::core::Entity &)>;
+      
       public:
         GameSystem(sol::state_view lua);
         ~GameSystem();
@@ -33,12 +35,14 @@ namespace rz::game::systems
         bool removeComponent(rz::core::ComponentHandle ch);
 
       private:
+        bool checkGameOver();
+        void killAgent(const rz::core::Entity &entity);
+
         sol::state_view _lua;
         std::map<UUID64, std::vector<rz::game::event::data::COLLISION>, UUID64Cmp> _collisions;
         std::map<UUID64, glm::vec2, UUID64Cmp> _positions;
 
         std::map<Team, int> _wins;
-        using EffectFunction = std::function<bool(const rz::core::EntityMap &, const rz::core::Entity &)>;
         std::map<std::string, std::tuple<EffectFunction, SteeringBehaviour, EffectFunction>> _effects;
     };
 } // namespace rz::game::systems
