@@ -9,12 +9,12 @@ namespace rz::game::components
 {
     class AgentComponent : public rz::core::Component
     {
+      public:
         struct Blackboard
         {
             int threat;
         };
 
-      public:
         AgentComponent(std::string name, Team team, rz::planner::ActionSet actions) : name{name}, team{team}, actions{ actions } {}
         AgentComponent() {}
         ~AgentComponent() {}

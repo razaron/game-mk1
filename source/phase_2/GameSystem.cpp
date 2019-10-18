@@ -50,14 +50,14 @@ GameSystem::GameSystem(sol::state_view lua)
     });
 
     // Lua hooks
-    lua["TEAM"] = sol::new_table();
-    lua["TEAM"]["RED"] = Team::RED;
-    lua["TEAM"]["GREEN"] = Team::GREEN;
-    lua["TEAM"]["BLUE"] = Team::BLUE;
-    lua["TEAM"]["YELLOW"] = Team::YELLOW;
-    lua["TEAM"]["NONE"] = Team::NONE;
+    _lua["TEAM"] = sol::new_table();
+    _lua["TEAM"]["RED"] = Team::RED;
+    _lua["TEAM"]["GREEN"] = Team::GREEN;
+    _lua["TEAM"]["BLUE"] = Team::BLUE;
+    _lua["TEAM"]["YELLOW"] = Team::YELLOW;
+    _lua["TEAM"]["NONE"] = Team::NONE;
 
-    lua["newBase"] = [this](Team team, glm::vec2 pos, glm::u8vec3 col) {
+    _lua["newBase"] = [this](Team team, glm::vec2 pos, glm::u8vec3 col) {
         Event e{
             UUID64{ 0 },                         // Entity ID. 0 because unneeded
             core::event::type::SPACE_NEW_ENTITY, // Event type enum
@@ -71,7 +71,7 @@ GameSystem::GameSystem(sol::state_view lua)
         _eventStream.pushEvent(e, StreamType::OUTGOING);
     };
 
-    lua["newDeposit"] = [this](Team team, glm::vec2 pos, glm::u8vec3 col) {
+    _lua["newDeposit"] = [this](Team team, glm::vec2 pos, glm::u8vec3 col) {
         Event e{
             UUID64{ 0 },                         // Entity ID. 0 because unneeded
             core::event::type::SPACE_NEW_ENTITY, // Event type enum
@@ -85,20 +85,10 @@ GameSystem::GameSystem(sol::state_view lua)
         _eventStream.pushEvent(e, StreamType::OUTGOING);
     };
 
-    lua["newWorker"] = [this](glm::vec2 pos, int sides, glm::u8vec3 col, Team team) {
-        Action mine{
-            "mine",
-            1,
-            ConditionSet{ Condition{ "team", "hasDeposit", true, Operation::EQUAL } },
-            ConditionSet{ Condition{ "self", "hasResource", true, Operation::ASSIGN } }
-        };
+    _lua["newWorker"] = [&](glm::vec2 pos, int sides, glm::u8vec3 col, Team team) {
+        Action mine = _lua["Actions"]["mine"]();
 
-        Action craft{
-            "craft",
-            1,
-            ConditionSet{ Condition{ "self", "hasResource", true, Operation::EQUAL } },
-            ConditionSet{ Condition{ "self", "craft", true, Operation::ASSIGN } }
-        };
+        Action craft = _lua["Actions"]["craft"]();
 
         ActionSet actions{ mine, craft };
 
@@ -117,144 +107,16 @@ GameSystem::GameSystem(sol::state_view lua)
         _eventStream.pushEvent(e, StreamType::OUTGOING);
     };
 
-    EffectFunction mineEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto w = getObject<WorkerComponent>(self[ComponentType{ "WORKER" }]);
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto d = getObject<DepositComponent>(a->target[ComponentType{ "DEPOSIT" }]);
+    EffectFunction mineTarget = _lua["Effects"]["mine"]["start"];
+    EffectFunction mineEffect = _lua["Effects"]["mine"]["run"];
 
-        if (a->blackboard.threat)
-        {
-            d->serving--;
-            return true;
-        }
-        else if (a->team != d->team)
-        {
-            d->serving--;
-            return true;
-        }
-        else if (!d->metal)
-        {
-            d->serving--;
-            return true;
-        }
-        else if (w->elapsed > 0.1 && glm::distance(_positions[self.getID()], _positions[a->target.getID()]) < 8)
-        {
-            w->elapsed = 0;
-
-            d->metal--;
-            w->metal++;
-
-            if (!d->metal || w->metal == 5)
-            {
-                d->serving--;
-                return true;
-            }
-            else
-                return false;
-        }
-
-        return false;
-    };
-
-    EffectFunction mineTarget = [&](const EntityMap &entities, const Entity &self) {
-        auto w = getObject<WorkerComponent>(self[ComponentType{ "WORKER" }]);
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-
-        std::vector<Entity> deposits;
-        std::vector<Entity> bases;
-        for (auto &[id, entity] : entities)
-        {
-            if (entity.has(ComponentType{ "DEPOSIT" }))
-                deposits.push_back(entity);
-            else if (entity.has(ComponentType{ "BASE" }))
-                bases.push_back(entity);
-        }
-
-        Entity base{};
-        for (auto &entity : bases)
-        {
-            auto b = getObject<BaseComponent>(entity[ComponentType{ "BASE" }]);
-
-            if (b->team == a->team)
-                base = entity;
-        }
-
-        Entity target{};
-        for (auto &dep : deposits)
-        {
-            auto depD = getObject<DepositComponent>(dep[ComponentType{ "DEPOSIT" }]);
-            if (target == Entity{} && depD->team == a->team)
-                target = dep;
-            else if (depD->team == a->team)
-            {
-                auto targetD = getObject<DepositComponent>(target[ComponentType{ "DEPOSIT" }]);
-
-                float cur = depD->serving / glm::distance(_positions[base.getID()], _positions[dep.getID()]);
-                float prev = targetD->serving / glm::distance(_positions[base.getID()], _positions[target.getID()]);
-
-                if (depD->team == a->team && cur < prev)
-                    target = dep;
-            }
-        }
-
-        a->target = target;
-
-        if (a->target != Entity{})
-        {
-            auto d = getObject<DepositComponent>(a->target[ComponentType{ "DEPOSIT" }]);
-            d->serving++;
-        }
-
-        return true;
-    };
-
-    EffectFunction craftEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto w = getObject<WorkerComponent>(self[ComponentType{ "WORKER" }]);
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-
-        if (!w->metal)
-            return true;
-        else if (w->elapsed > 1.0 && glm::distance(_positions[self.getID()], _positions[a->target.getID()]) < 8)
-        {
-            auto b = getObject<BaseComponent>(a->target[ComponentType{ "BASE" }]);
-
-            w->elapsed = 0;
-            w->metal--;
-            b->metal++;
-
-            return !w->metal;
-        }
-    };
-
-    EffectFunction craftTarget = [&](const EntityMap &entities, const Entity &self) {
-        auto w = getObject<WorkerComponent>(self[ComponentType{ "WORKER" }]);
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-
-        std::vector<Entity> bases;
-        for (auto &[id, entity] : entities)
-        {
-            if (entity.has(ComponentType{ "BASE" }))
-                bases.push_back(entity);
-        }
-
-        Entity target{};
-        for (auto &base : bases)
-        {
-            auto b = getObject<BaseComponent>(base[ComponentType{ "BASE" }]);
-
-            if (b->team == a->team)
-                target = base;
-        }
-
-        a->target = target;
-
-        return true;
-    };
+    EffectFunction craftTarget = _lua["Effects"]["craft"]["start"];
+    EffectFunction craftEffect = _lua["Effects"]["craft"]["run"];
 
     _effects["mine"] = std::make_tuple(mineTarget, SteeringBehaviour::ARRIVE, mineEffect);
     _effects["craft"] = std::make_tuple(craftTarget, SteeringBehaviour::ARRIVE, craftEffect);
 
-    lua["newBullet"] = [&](glm::vec2 pos, glm::u8vec3 col, glm::vec2 dir, UUID64 owner, Team team) {
+    _lua["newBullet"] = [&](glm::vec2 pos, glm::u8vec3 col, glm::vec2 dir, UUID64 owner, Team team) {
         Event e{
             UUID64{ 0 },                         // Entity ID. 0 because unneeded
             core::event::type::SPACE_NEW_ENTITY, // Event type enum
@@ -269,64 +131,14 @@ GameSystem::GameSystem(sol::state_view lua)
         _eventStream.pushEvent(e, StreamType::OUTGOING);
     };
 
-    lua["newAttacker"] = [this](glm::vec2 pos, int sides, glm::u8vec3 col, Team team) {
-        // TODO ProceduralCondition need to be able to take arguments. In this case, EntityMap and Entity
-        Action findTarget{
-            "findTarget",
-            1,
-            {},
-            {},
-            {},
-            ProceduralConditionSet{ []() { return Condition{ "target", "isAvailable", true, Operation::ASSIGN }; } }
-        };
-
-        Action getInRange{
-            "getInRange",
-            1,
-            ConditionSet{ Condition{ "target", "isAvailable", true, Operation::EQUAL } },
-            ConditionSet{ Condition{ "target", "isInRange", true, Operation::ASSIGN } }
-        };
-
-        Action shoot{
-            "shoot",
-            1,
-            ConditionSet{
-                Condition{ "target", "isInRange", true, Operation::EQUAL },
-                Condition{ "self", "ammo", 0, Operation::GREATER } },
-            ConditionSet{
-                Condition{ "target", "isDead", true, Operation::ASSIGN },
-                Condition{ "self", "threat", 1, Operation::MINUS } }
-        };
-
-        Action melee{
-            "melee",
-            2,
-            ConditionSet{ Condition{ "target", "isInRange", true, Operation::EQUAL } },
-            ConditionSet{
-                Condition{ "target", "isDead", true, Operation::ASSIGN },
-                Condition{ "self", "threat", 1, Operation::MINUS } }
-        };
-        Action scout{
-            "scout",
-            1,
-            {},
-            ConditionSet{ Condition{ "self", "isScouting", true, Operation::ASSIGN } }
-        };
-
-        Action resupply{
-            "resupply",
-            2,
-            ConditionSet{ Condition{ "base", "hasAmmo", true, Operation::EQUAL } },
-            ConditionSet{ Condition{ "self", "ammo", 1, Operation::PLUS } }
-        };
-
-        Action capture{
-            "capture",
-            1,
-            ConditionSet{ Condition{ "world", "hasDeposit", true, Operation::EQUAL } },
-            ConditionSet{ Condition{ "team", "hasDeposit", true, Operation::ASSIGN } }
-
-        };
+    _lua["newAttacker"] = [&](glm::vec2 pos, int sides, glm::u8vec3 col, Team team) {
+        Action findTarget = _lua["Actions"]["findTarget"]();
+        Action getInRange = _lua["Actions"]["getInRange"]();
+        Action shoot = _lua["Actions"]["shoot"]();
+        Action melee = _lua["Actions"]["melee"]();
+        Action scout = _lua["Actions"]["scout"]();
+        Action resupply = _lua["Actions"]["resupply"]();
+        Action capture = _lua["Actions"]["capture"]();
 
         ActionSet actions{ findTarget, getInRange, shoot, melee, resupply, scout, capture };
 
@@ -345,50 +157,13 @@ GameSystem::GameSystem(sol::state_view lua)
         _eventStream.pushEvent(e, StreamType::OUTGOING);
     };
 
-    lua["newDefender"] = [this](glm::vec2 pos, int sides, glm::u8vec3 col, Team team) {
-        // TODO ProceduralCondition need to be able to take arguments. In this case, EntityMap and Entity
-        Action findTarget{
-            "findTarget",
-            1,
-            {},
-            {},
-            {},
-            ProceduralConditionSet{ []() { return Condition{ "target", "isAvailable", true, Operation::ASSIGN }; } }
-        };
-
-        Action getInRange{
-            "getInRange",
-            1,
-            ConditionSet{ Condition{ "target", "isAvailable", true, Operation::EQUAL } },
-            ConditionSet{ Condition{ "target", "isInRange", true, Operation::ASSIGN } }
-        };
-
-        Action shoot{
-            "shoot",
-            1,
-            ConditionSet{
-                Condition{ "target", "isInRange", true, Operation::EQUAL },
-                Condition{ "self", "ammo", 0, Operation::GREATER } },
-            ConditionSet{
-                Condition{ "target", "isDead", true, Operation::ASSIGN },
-                Condition{ "self", "threat", 1, Operation::MINUS } }
-        };
-
-        Action melee{
-            "melee",
-            2,
-            ConditionSet{ Condition{ "target", "isInRange", true, Operation::EQUAL } },
-            ConditionSet{
-                Condition{ "target", "isDead", true, Operation::ASSIGN },
-                Condition{ "self", "threat", 1, Operation::MINUS } }
-        };
-
-        Action patrol{
-            "patrol",
-            1,
-            ConditionSet{},
-            ConditionSet{ Condition{ "self", "isPatrolling", true, Operation::ASSIGN } }
-        };
+    _lua["newDefender"] = [this](glm::vec2 pos, int sides, glm::u8vec3 col, Team team) {
+        
+        Action findTarget = _lua["Actions"]["findTarget"]();
+        Action getInRange = _lua["Actions"]["getInRange"]();
+        Action shoot = _lua["Actions"]["shoot"]();
+        Action melee = _lua["Actions"]["melee"]();
+        Action patrol = _lua["Actions"]["patrol"]();
 
         ActionSet actions{ findTarget, getInRange, shoot, melee, patrol };
 
@@ -407,316 +182,24 @@ GameSystem::GameSystem(sol::state_view lua)
         _eventStream.pushEvent(e, StreamType::OUTGOING);
     };
 
-    // TODO EffectFunction begin_<<name>>, run_<<name>>, end_<<name>>
-    EffectFunction findTargetEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType("AGENT")]);
-
-        if (!entities.count(a->target.getID())) return true;
-
-        return true;
-    };
-
-    EffectFunction findTargetTarget = [&](const EntityMap &entities, const Entity &self) {
-        std::vector<Entity> agents;
-
-        for (auto &[id, entity] : entities)
-        {
-            if (entity.has(ComponentType{ "AGENT" }))
-                agents.push_back(entity);
-        }
-
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType{ "SOLDIER" }]);
-        Entity target{};
-        for (auto &agent : agents)
-        {
-            auto a2 = getObject<AgentComponent>(agent[ComponentType{ "AGENT" }]);
-
-            if (target == Entity{} && a->team != a2->team)
-                target = agent;
-            if (a->team != a2->team && glm::distance(_positions[agent.getID()], _positions[self.getID()]) < glm::distance(_positions[target.getID()], _positions[self.getID()]))
-                target = agent;
-        }
-
-        a->target = target;
-
-        if (target == Entity{})
-            return false;
-        else
-            return true;
-    };
-
-    EffectFunction getInRangeEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType("AGENT")]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        if (!entities.count(a->target.getID())) return true;
-
-        if (glm::distance(_positions[a->target.getID()], _positions[self.getID()]) < 64)
-            return true;
-        else
-            return false;
-    };
-
-    EffectFunction getInRangeTarget = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        if (!entities.count(a->target.getID()))
-        {
-            a->target = Entity{};
-            return true;
-        }
-
-        auto t = getObject<AgentComponent>(a->target[ComponentType{ "AGENT" }]);
-
-        if (a->team != t->team)
-            return true;
-        else
-            return false;
-    };
-
-    EffectFunction shootEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType("AGENT")]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        if (!entities.count(a->target.getID())) return true;
-
-        auto pos1 = _positions[a->target.getID()];
-        auto pos2 = _positions[self.getID()];
-        auto distance = glm::distance(pos1, pos2);
-
-        if (distance > 64 || !s->ammo)
-        {
-            a->target = Entity{};
-
-            return true;
-        }
-        else if (s->elapsed > 1.0 && distance < 32)
-        {
-            sol::function func = _lua["newBullet"];
-
-            auto start = _positions[self.getID()];
-            auto dir = glm::normalize(_positions[a->target.getID()] - _positions[self.getID()]);
-
-            func(start, glm::u8vec3{ 255 }, dir, self.getID(), a->team);
-            s->ammo--;
-            s->elapsed = 0;
-
-            return false;
-        }
-
-        return false;
-    };
-
-    EffectFunction shootTarget = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        if (!entities.count(a->target.getID()))
-        {
-            a->target = Entity{};
-            return true;
-        }
-
-        auto t = getObject<AgentComponent>(a->target[ComponentType{ "AGENT" }]);
-
-        if (a->team != t->team)
-            return true;
-        else
-            return false;
-    };
-
-    EffectFunction meleeEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        if (!entities.count(a->target.getID())) return true;
-
-        auto pos1 = _positions[a->target.getID()];
-        auto pos2 = _positions[self.getID()];
-        auto distance = glm::distance(pos1, pos2);
-
-        if (distance > 64)
-        {
-            a->target = Entity{};
-
-            return true;
-        }
-        else if (s->elapsed > 1.0 && distance < 16)
-        {
-            killAgent(a->target);
-
-            s->elapsed = 0;
-            a->target = Entity{};
-
-            return true;
-        }
-
-        return false;
-    };
-
-    EffectFunction meleeTarget = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        if (!entities.count(a->target.getID()))
-        {
-            a->target = Entity{};
-            return true;
-        }
-
-        auto t = getObject<AgentComponent>(a->target[ComponentType{ "AGENT" }]);
-
-        if (a->team != t->team)
-            return true;
-        else
-            return false;
-    };
-
-    // TODO integrate Lua "resupplying" and "serving" (ctrl-f in actions.lua)
+    // TODO integrate Lua "resupplying" and "serving" (ctrl-f in old actions.lua)
     // TODO Add seperate blackboard for AgentComponent, WorkerComponent etc.
-    EffectFunction resupplyEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        auto b = getObject<BaseComponent>(a->target[ComponentType{ "BASE" }]);
-
-        if (!b->metal || a->blackboard.threat)
-        {
-            return true;
-        }
-        else if (glm::distance(_positions[a->target.getID()], _positions[self.getID()]) < 8)
-        {
-            s->ammo++;
-            b->metal--;
-
-            return true;
-        }
-
-        return false;
-    };
-
-    EffectFunction resupplyTarget = [&](const EntityMap &entities, const Entity &self) {
-        std::vector<Entity> bases;
-
-        for (auto &[id, entity] : entities)
-        {
-            if (entity.has(ComponentType{ "BASE" }))
-                bases.push_back(entity);
-        }
-
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-        Entity target{};
-        for (auto &base : bases)
-        {
-            auto b = getObject<BaseComponent>(base[ComponentType{ "BASE" }]);
-
-            if (b->team == a->team)
-                target = base;
-        }
-
-        a->target = target;
-
-        return true;
-    };
-
-    EffectFunction scoutEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        if (a->blackboard.threat != 0 || s->ammo < 3 /* && w->blackBoard.ammoAvailable*/)
-            return true;
-        else
-            return false;
-    };
-
-    EffectFunction scoutTarget = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        a->target = self;
-
-        return true;
-    };
-
-    EffectFunction captureEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-        auto d = getObject<DepositComponent>(a->target[ComponentType{ "DEPOSIT" }]);
-
-        if (d->team == a->team || a->blackboard.threat != 0)
-            return true;
-        else
-            return false;
-    };
-
-    EffectFunction captureTarget = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        std::vector<Entity> deposits;
-        for (auto &[id, entity] : entities)
-        {
-            if (entity.has(ComponentType{ "DEPOSIT" }))
-            {
-                auto d = getObject<DepositComponent>(entity[ComponentType{ "DEPOSIT" }]);
-                if (d->team != a->team)
-                    deposits.push_back(entity);
-            }
-        }
-
-        if (!deposits.size())
-            return false;
-
-        std::vector<Entity> target;
-
-        std::sample(deposits.begin(), deposits.end(), std::back_inserter(target), 1, std::mt19937{ std::random_device{}() });
-
-        a->target = target[0];
-
-        return true;
-    };
-
-    EffectFunction patrolTarget = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        std::vector<Entity> deposits;
-        for (auto &[id, entity] : entities)
-        {
-            if (entity.has(ComponentType{ "DEPOSIT" }))
-            {
-                auto d = getObject<DepositComponent>(entity[ComponentType{ "DEPOSIT" }]);
-                if (d->team == a->team)
-                    deposits.push_back(entity);
-            }
-        }
-
-        if (!deposits.size())
-            return false;
-
-        std::vector<Entity> target;
-
-        std::sample(deposits.begin(), deposits.end(), std::back_inserter(target), 1, std::mt19937{ std::random_device{}() });
-
-        a->target = target[0];
-
-        return true;
-    };
-
-    EffectFunction patrolEffect = [&](const EntityMap &entities, const Entity &self) {
-        auto a = getObject<AgentComponent>(self[ComponentType{ "AGENT" }]);
-        auto s = getObject<SoldierComponent>(self[ComponentType("SOLDIER")]);
-
-        auto depo = getObject<DepositComponent>(a->target[ComponentType{"DEPOSIT"}]);
-
-        if (a->blackboard.threat || s->ammo < 3 || glm::distance(_positions[a->target.getID()], _positions[self.getID()]) < 2)
-            return true;
-        else
-            return false;
-    };
+    EffectFunction findTargetTarget = _lua["Effects"]["findTarget"]["start"];
+    EffectFunction findTargetEffect = _lua["Effects"]["findTarget"]["run"];
+    EffectFunction getInRangeTarget = _lua["Effects"]["getInRange"]["start"];
+    EffectFunction getInRangeEffect = _lua["Effects"]["getInRange"]["run"];
+    EffectFunction shootTarget = _lua["Effects"]["shoot"]["start"];
+    EffectFunction shootEffect = _lua["Effects"]["shoot"]["run"];
+    EffectFunction meleeTarget = _lua["Effects"]["melee"]["start"];
+    EffectFunction meleeEffect = _lua["Effects"]["melee"]["run"];
+    EffectFunction scoutTarget = _lua["Effects"]["scout"]["start"];
+    EffectFunction scoutEffect = _lua["Effects"]["scout"]["run"];
+    EffectFunction resupplyTarget = _lua["Effects"]["resupply"]["start"];
+    EffectFunction resupplyEffect = _lua["Effects"]["resupply"]["run"];
+    EffectFunction captureTarget = _lua["Effects"]["capture"]["start"];
+    EffectFunction captureEffect = _lua["Effects"]["capture"]["run"];
+    EffectFunction patrolTarget = _lua["Effects"]["patrol"]["start"];
+    EffectFunction patrolEffect = _lua["Effects"]["patrol"]["run"];
 
     _effects["findTarget"] = std::make_tuple(findTargetTarget, SteeringBehaviour::STOP, findTargetEffect);
     _effects["getInRange"] = std::make_tuple(getInRangeTarget, SteeringBehaviour::SEEK, getInRangeEffect);
@@ -727,7 +210,7 @@ GameSystem::GameSystem(sol::state_view lua)
     _effects["capture"] = std::make_tuple(captureTarget, SteeringBehaviour::ARRIVE, captureEffect);
     _effects["patrol"] = std::make_tuple(patrolTarget, SteeringBehaviour::ARRIVE, patrolEffect);
 
-    lua["deleteEntity"] = [&](const UUID64 &id) {
+    _lua["deleteEntity"] = [&](const UUID64 &id) {
         Event e{
             id,                                     // Entity ID.
             core::event::type::SPACE_DELETE_ENTITY, // Event type enum
@@ -736,6 +219,74 @@ GameSystem::GameSystem(sol::state_view lua)
 
         _eventStream.pushEvent(e, StreamType::OUTGOING);
     };
+
+    _lua["getPosition"] = [&](const Entity &entity){ 
+        if (_positions.count(entity.getID()))
+            return _positions[entity.getID()];
+        else
+            return glm::vec2{};
+    };
+
+    _lua.new_usertype<BaseComponent>("BaseComponent",
+                                    sol::constructors<BaseComponent()>(),
+                                    "team", &BaseComponent::team,
+                                    "metal", &BaseComponent::metal,
+                                    "serving", &BaseComponent::serving);
+
+    _lua["getBase"] = [&](const Handle &handle){
+        return getObject<BaseComponent>(handle);
+    };
+
+    _lua.new_usertype<DepositComponent>("DepositComponent",
+                                    sol::constructors<DepositComponent()>(),
+                                    "team", &DepositComponent::team,
+                                    "metal", &DepositComponent::metal,
+                                    "control", &DepositComponent::control,
+                                    "serving", &DepositComponent::serving);
+
+    _lua["getDeposit"] = [&](const Handle &handle){
+        return getObject<DepositComponent>(handle);
+    };
+
+    _lua.new_usertype<AgentComponent::Blackboard>("AgentBlackboard",
+                                                sol::constructors<AgentComponent::Blackboard>(),
+                                                "threat", &AgentComponent::Blackboard::threat                                                    
+                                                );
+
+    _lua.new_usertype<AgentComponent>("AgentComponent",
+                                    sol::constructors<AgentComponent()>(),
+                                    "name", &AgentComponent::name,
+                                    "team", &AgentComponent::team,
+                                    "blackboard", &AgentComponent::blackboard,
+                                    "target", &AgentComponent::target,
+                                    "isDead", &AgentComponent::isDead
+                                    );
+
+    _lua["getAgent"] = [&](const Handle &handle){
+        return getObject<AgentComponent>(handle);
+    };
+
+    _lua.new_usertype<WorkerComponent>("WorkerComponent",
+                                    sol::constructors<WorkerComponent()>(),
+                                    "metal", &WorkerComponent::metal,
+                                    "elapsed", &WorkerComponent::elapsed
+                                    );
+
+    _lua["getWorker"] = [&](const Handle &handle){
+        return getObject<WorkerComponent>(handle);
+    };
+
+    _lua.new_usertype<SoldierComponent>("SoldierComponent",
+                                    sol::constructors<SoldierComponent()>(),
+                                    "ammo", &SoldierComponent::ammo,
+                                    "elapsed", &SoldierComponent::elapsed
+                                    );
+
+    _lua["getSoldier"] = [&](const Handle &handle){
+        return getObject<SoldierComponent>(handle);
+    };
+
+    _lua["killAgent"] = [&](const Entity &e){ killAgent(e); };
 
     // Load actions script
     auto result = _lua.script_file("actions.lua", [](lua_State *, sol::protected_function_result pfr) {
@@ -1479,4 +1030,4 @@ bool GameSystem::removeComponent(ComponentHandle ch)
         return false;
 
     return true;
-}
+ }

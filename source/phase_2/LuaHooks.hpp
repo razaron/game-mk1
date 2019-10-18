@@ -29,6 +29,12 @@ namespace rz::lua::maths
     }
 
     template <typename Vector>
+    inline typename Vector::length_type distance(const Vector &u, const Vector &v)
+    {
+        return glm::distance(u, v);
+    }
+
+    template <typename Vector>
     inline typename Vector::length_type length(const Vector &vec)
     {
         return glm::length(vec);
@@ -72,6 +78,7 @@ namespace rz::lua::maths
                                         sol::constructors<glm::u8vec3(unsigned char, unsigned char, unsigned char), glm::u8vec3(const glm::u8vec3 &)>());
 
         table["normalize"] = sol::overload(&normalize<glm::vec2>);
+        table["distance"] = sol::overload(&distance<glm::vec2>);
         table["length"] = sol::overload(&length<glm::vec2>);
         table["limit"] = sol::overload(&limit<glm::vec2>);
         table["dot"] = sol::overload(&dot<glm::vec2>);

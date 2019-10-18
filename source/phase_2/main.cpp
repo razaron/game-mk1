@@ -25,6 +25,8 @@ int main()
     rz::lua::maths::hook(lua);
     rz::lua::planner::bind(lua);
     rz::lua::misc::bind(lua);
+    rz::lua::component::bind(lua);
+    rz::lua::entity::bind(lua);
 
     // Create a new space
     SystemGraph g;
