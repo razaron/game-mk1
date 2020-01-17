@@ -10,12 +10,8 @@ function game.init()
     newBase(TEAM.GREEN, glm.vec2.new(896, 128), glm.u8vec3.new(0, 255, 0))
     newBase(TEAM.BLUE, glm.vec2.new(896, 896), glm.u8vec3.new(0, 0, 255))
     newBase(TEAM.YELLOW, glm.vec2.new(128, 896), glm.u8vec3.new(255, 255, 0))
-	
-	for y=128,768, 64 do
-		--newAttacker(glm.vec2.new(512, y), 3, glm.u8vec3.new(255, 255, 255), TEAM.RED)
-	end
-	
-	-- DEPOSITS
+
+  	-- DEPOSITS
     newDeposit(TEAM.RED, glm.vec2.new(192, 192), glm.u8vec3.new(255, 0, 0))
     newDeposit(TEAM.GREEN, glm.vec2.new(832, 192), glm.u8vec3.new(0, 255, 0))
     newDeposit(TEAM.BLUE, glm.vec2.new(832, 832), glm.u8vec3.new(0, 0, 255))

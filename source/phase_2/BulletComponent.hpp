@@ -15,7 +15,6 @@ namespace rz::game::components
         UUID64 ownerID{0};
         Team team{Team::NONE};
         glm::vec2 origin{};
-        bool isDead{false};
    };
 } // namespace rz::game::components
 

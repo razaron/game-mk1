@@ -12,6 +12,8 @@
 #include "WorkerComponent.hpp"
 #include "config.hpp"
 
+#include <iomanip>
+
 namespace rz::game::systems
 {
     using BaseArgs = std::tuple<Team, int>;

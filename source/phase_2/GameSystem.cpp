@@ -227,6 +227,50 @@ GameSystem::GameSystem(sol::state_view lua)
             return glm::vec2{};
     };
 
+    _lua["printEntityDetails"] = [&](){
+        std::vector<Event> events;
+
+        std::stringstream names;
+        std::stringstream actions;
+        std::stringstream positions;
+        for (auto &[id, entity] : _entities)
+        {
+            if (entity.has(ComponentType{ "AGENT" }))
+            {
+                try
+                {
+                    auto a = getObject<AgentComponent>(entity[ComponentType{ "AGENT" }]);
+                    auto p = _positions[id];
+
+                    names << a->name << '\n';
+                    actions << a->curAction.name << '\n';
+                    positions << p.x << " : " << p.y << '\n';
+                }
+                catch(const rz::objectpool::error::HandleOutOfRange& e)
+                {
+                    
+                }
+            }
+        }
+
+        events.push_back(Event{
+            UUID64{ 4 },
+            game::event::type::TEXT,
+            std::make_shared<game::event::data::TEXT>(names.str(), glm::vec2{ 128, 0 }, glm::u8vec3{ 255, 255, 255 }, 16) });
+
+        events.push_back(Event{
+            UUID64{ 5 },
+            game::event::type::TEXT,
+            std::make_shared<game::event::data::TEXT>(actions.str(), glm::vec2{ 256, 0 }, glm::u8vec3{ 255, 255, 255 }, 16) });
+
+        events.push_back(Event{
+            UUID64{ 6 },
+            game::event::type::TEXT,
+            std::make_shared<game::event::data::TEXT>(positions.str(), glm::vec2{ 384, 0 }, glm::u8vec3{ 255, 255, 255 }, 16) });
+
+        pushEvents(events, StreamType::OUTGOING);
+    };
+
     _lua.new_usertype<BaseComponent>("BaseComponent",
                                     sol::constructors<BaseComponent()>(),
                                     "team", &BaseComponent::team,
@@ -258,8 +302,7 @@ GameSystem::GameSystem(sol::state_view lua)
                                     "name", &AgentComponent::name,
                                     "team", &AgentComponent::team,
                                     "blackboard", &AgentComponent::blackboard,
-                                    "target", &AgentComponent::target,
-                                    "isDead", &AgentComponent::isDead
+                                    "target", &AgentComponent::target
                                     );
 
     _lua["getAgent"] = [&](const Handle &handle){
@@ -329,15 +372,30 @@ Task GameSystem::update(EntityMap &entities, double delta)
     else
         elapsed -= _interval;
 
-    if (!entities.size() && gameTime > 1.0)
-    {
-        sol::function func = _lua["game"]["init"];
-        func();
-
-        gameTime = 0;
-    }
 
     _entities = entities;
+    
+    if (gameTime > 1.0)
+    {
+        if(checkGameOver())
+        {
+            gameTime = 0.0;
+
+            std::vector<Event> events;
+            for (auto &[id, entity] : _entities)
+            {
+                events.emplace_back(
+                    id,
+                    core::event::type::SPACE_DELETE_ENTITY,
+                    std::make_shared<core::event::data::SPACE_DELETE_ENTITY>());
+            }
+
+            pushEvents(events, StreamType::OUTGOING);
+         
+            sol::function func = _lua["game"]["init"];
+            func();
+        }
+    }
 
     std::vector<Event> events;
 
@@ -783,7 +841,7 @@ Task GameSystem::update(EntityMap &entities, double delta)
 
             for (auto &collision : collisions)
             {
-                if (!b->isDead && collision.group != static_cast<int>(b->team) && collision.group != GROUP_DEPOSIT && collision.group != GROUP_BULLET)
+                if (collision.group != static_cast<int>(b->team) && collision.group != GROUP_DEPOSIT && collision.group != GROUP_BULLET)
                 {
                     uuid = collision.target;
                     dist = collision.distance;
@@ -796,8 +854,6 @@ Task GameSystem::update(EntityMap &entities, double delta)
 
                 sol::function func = _lua["deleteEntity"];
                 func(bullet.getID());
-
-                b->isDead = true;
             }
         }
     }
@@ -814,9 +870,7 @@ Task GameSystem::update(EntityMap &entities, double delta)
         {
             auto a = getObject<AgentComponent>(entity[ComponentType{ "AGENT" }]);
 
-            if (a->isDead)
-                continue;
-            else if (a->team == Team::RED)
+            if (a->team == Team::RED)
                 red.push_back(entity);
             else if (a->team == Team::GREEN)
                 green.push_back(entity);
@@ -828,7 +882,7 @@ Task GameSystem::update(EntityMap &entities, double delta)
     }
 
     std::stringstream str;
-    str << _wins[Team::RED] << "\t\t\t\t\t\t\t\t" << red.size();
+    str << _wins[Team::RED] << "\t\t" << red.size();
 
     events.emplace_back(
         UUID64{ 0 },
@@ -836,7 +890,7 @@ Task GameSystem::update(EntityMap &entities, double delta)
         std::make_shared<game::event::data::TEXT>(std::string{str.str()}, glm::vec2{ 0, 0 }, glm::u8vec3{ 255, 0, 0 }, 30));
 
     str = std::stringstream{};
-    str << _wins[Team::GREEN] << "\t\t\t\t\t\t\t\t" << green.size();
+    str << _wins[Team::GREEN] << "\t\t" << green.size();
 
     events.emplace_back(
         UUID64{ 1 },
@@ -844,7 +898,7 @@ Task GameSystem::update(EntityMap &entities, double delta)
         std::make_shared<game::event::data::TEXT>(std::string{str.str()}, glm::vec2{ 0, 32 }, glm::u8vec3{ 0, 255, 0 }, 30));
 
     str = std::stringstream{};
-    str << _wins[Team::BLUE] << "\t\t\t\t\t\t\t\t" << blue.size();
+    str << _wins[Team::BLUE] << "\t\t" << blue.size();
 
     events.emplace_back(
         UUID64{ 2 },
@@ -852,7 +906,7 @@ Task GameSystem::update(EntityMap &entities, double delta)
         std::make_shared<game::event::data::TEXT>(std::string{str.str()}, glm::vec2{ 0, 64 }, glm::u8vec3{ 0, 0, 255 }, 30));
 
     str = std::stringstream{};
-    str << _wins[Team::YELLOW] << "\t\t\t\t\t\t\t\t" << yellow.size();
+    str << _wins[Team::YELLOW] << "\t\t" << yellow.size();
 
     events.emplace_back(
         UUID64{ 3 },
@@ -868,40 +922,6 @@ void GameSystem::killAgent(const Entity &entity)
 {
     sol::function func = _lua["deleteEntity"];
     func(entity.getID());
-
-    auto a = getObject<AgentComponent>(entity[ComponentType{ "AGENT" }]);
-    a->isDead = true;
-
-    if (checkGameOver())
-    {
-        std::vector<Event> events;
-        for (auto &[id, entity] : _entities)
-        {
-            events.emplace_back(
-                id,
-                core::event::type::SPACE_DELETE_ENTITY,
-                std::make_shared<core::event::data::SPACE_DELETE_ENTITY>());
-        }
-
-        for (auto &[id, entity] : _entities)
-        {
-            if (entity.has(ComponentType{ "AGENT" }))
-            {
-                auto a = getObject<AgentComponent>(entity[ComponentType{ "AGENT" }]);
-
-                a->isDead = true;
-            }
-
-            if (entity.has(ComponentType{ "BULLET" }))
-            {
-                auto b = getObject<BulletComponent>(entity[ComponentType{ "BULLET" }]);
-
-                b->isDead = true;
-            }
-        }
-
-        pushEvents(events, StreamType::OUTGOING);
-    }
 }
 
 bool GameSystem::checkGameOver()
@@ -917,7 +937,7 @@ bool GameSystem::checkGameOver()
         {
             auto a = getObject<AgentComponent>(entity[ComponentType{ "AGENT" }]);
 
-            if (a->isDead || a->name == "DEFENDER")
+            if (a->name == "DEFENDER")
                 continue;
             else if (a->team == Team::RED)
                 red.push_back(entity);

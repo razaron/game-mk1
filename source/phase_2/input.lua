@@ -1,6 +1,7 @@
 input = {
     handlers = {},
-    delta = 0
+    delta = 0,
+    showOverlay = true
 }
 
 function input.init()
@@ -52,7 +53,7 @@ function input.init()
 
     input.handlers["4"] = function(isReleased)
         if isReleased then
-            renderer.overlay = not renderer.overlay
+            input.showOverlay = not input.showOverlay
         end
     end
 
@@ -74,4 +75,9 @@ end
 
 function input.update(delta)
     input.delta = delta
+
+    if input.showOverlay then
+        printEntityDetails()
+    end
+
 end

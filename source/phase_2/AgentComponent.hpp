@@ -30,7 +30,6 @@ namespace rz::game::components
 
         rz::core::Entity target{};
 
-        bool isDead{false};
         Blackboard blackboard{};
     };
 } // namespace rz::game::components
